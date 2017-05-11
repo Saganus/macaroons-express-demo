@@ -12,7 +12,7 @@ var identifier = "random32";
 
 /* GET home page. */
 
-router.use(macaroons_auth());
+router.use(macaroons_auth({server_id : 'server-123', secretKey: secretKey}));
 
 router.get('/', function(req, res, next){
 	//macaroon = MacaroonsBuilder.deserialize(req.macaroons);
@@ -20,9 +20,10 @@ router.get('/', function(req, res, next){
 	//ar verifier = new MacaroonsVerifier(macaroon);
 	//var valid = verifier.isValid(secretKey);
 
-	res.render('restricted_area', { macaroon_serial : macaroon.serialize(),
-										macaroon_info : macaroon.inspect(),
-										valid : valid});
+	res.send('test')
+	//res.render('restricted_area', { macaroon_serial : macaroon.serialize(),
+	//									macaroon_info : macaroon.inspect(),
+	//									valid : valid});
 });
 
 module.exports = router;
