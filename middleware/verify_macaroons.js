@@ -9,26 +9,57 @@ module.exports = function(options) {
     console.log(req.cookies);
     //console.log(req.cookies[options.server_id + '/GET']);
 
-    req.macaroons = {}
+    get_macaroon 	= req.cookies[options.server_id + '/GET']
+    post_macaroon 	= req.cookies[options.server_id + '/POST']
 
-    get_macaroon = req.cookies[options.server_id + '/GET']
+    console.log(req.method);
+    if(req.method == 'GET'){
+	    if(typeof get_macaroon != 'undefined'){
+	    	macaroon = MacaroonsBuilder.deserialize(get_macaroon);
+	    	var verifier = new MacaroonsVerifier(macaroon);
+	    	verifier.satisfyExact('server-id='+options.server_id);
+	    	verifier.satisfyExact('http-verb=GET');
+	    	verifier.satisfyExact('allowed-routes=[/restricted]')
 
-    if(typeof get_macaroon != 'undefined'){
-    	macaroon = MacaroonsBuilder.deserialize(get_macaroon);
-    	var verifier = new MacaroonsVerifier(macaroon);
-		if(verifier.isValid(options.secretKey)){
-			console.log('Provided Macaroon is valid');
-    		next();
-    	}
-    	else{
-    		console.log('Provided Macaroon is invalid');
-    		res.sendStatus('401');
-    	}
+			if(verifier.isValid(options.secretKey)){
+				console.log('Provided Macaroon is valid');
+	    		next();
+	    	}
+	    	else{
+	    		console.log('Provided Macaroon is invalid');
+	    		console.log(macaroon.inspect())
+	    		res.sendStatus('401');
+	    	}
+	    }
+	    else{
+	    	console.log('No Macaroon provided for this request type');
+	    	res.sendStatus('401');
+		}
     }
-    else{
-    	console.log('No Macaroon provided for this request type');
-    	res.sendStatus('401');
-	}
+    else if(req.method == 'POST'){
+    	if(typeof post_macaroon != 'undefined'){
+	    	macaroon = MacaroonsBuilder.deserialize(post_macaroon);
+	    	var verifier = new MacaroonsVerifier(macaroon);
+	    	verifier.satisfyExact('server-id='+options.server_id);
+	    	verifier.satisfyExact('http-verb=POST');
+
+			if(verifier.isValid(options.secretKey)){
+				console.log('Provided Macaroon is valid');
+	    		next();
+	    	}
+	    	else{
+	    		console.log('Provided Macaroon is invalid');
+	    		console.log(macaroon.inspect())
+	    		res.sendStatus('401');
+	    	}
+	    }
+	    else{
+	    	console.log('No Macaroon provided for this request type');
+	    	res.sendStatus('401');
+		}
+    }
+
+
   }
 }
 

@@ -1,18 +1,19 @@
 var express = require('express');
-var router = express.Router();
+var router 	= express.Router();
 
-const crypto = require('crypto')
-var MacaroonsBuilder = require('macaroons.js').MacaroonsBuilder;
-var MacaroonsVerifier = require('macaroons.js').MacaroonsVerifier;
+//const crypto = require('crypto')
+var cookie 	= require('cookie');
 
-var location = "http://www.endofgreatness.net";
+var MacaroonsBuilder 	= require('macaroons.js').MacaroonsBuilder;
+var MacaroonsVerifier 	= require('macaroons.js').MacaroonsVerifier;
+
+var location 	= "http://www.endofgreatness.net";
 //var secretKey = crypto.randomBytes(32);
-var secretKey = "secret";
-var identifier = "random32";
+var secretKey 	= "secret";
+var identifier 	= "random32";
 
-var cookie = require('cookie');
 
-var default_cookie_age = 1;
+var default_cookie_age = 1 * 60 * 60 * 1000;
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -24,12 +25,21 @@ router.get('/generate', function(req, res, next){
 	console.log('Secret: ', secretKey.toString('hex'));
 
 	var macaroon = MacaroonsBuilder.create(location, secretKey, identifier);
+	macaroon = MacaroonsBuilder.modify(macaroon).add_first_party_caveat('server-id=server-123').getMacaroon();
 
-	res.cookie('server-123/GET', macaroon.serialize());
-	res.cookie('server-123/POST', macaroon.serialize());
+	var get_macaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat('http-verb=GET').getMacaroon();
+	get_macaroon 		= MacaroonsBuilder.modify(get_macaroon).add_first_party_caveat('allowed-routes=[/restricted]').getMacaroon();
+
+    var post_macaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat('http-verb=POST').getMacaroon();
+    post_macaroon 		= MacaroonsBuilder.modify(post_macaroon).add_first_party_caveat('allowed-routes=[/restricted]').getMacaroon();
+
+	res.cookie('server-123/GET', get_macaroon.serialize(), { maxAge: default_cookie_age, httpOnly: true });
+	res.cookie('server-123/POST', post_macaroon.serialize(), { maxAge: default_cookie_age, httpOnly: true });
 	//setMacaroonCookies(res, macaroon);
-	res.render('generated_macaroon', { macaroon_serial : macaroon.serialize(),
-										macaroon_info : macaroon.inspect()})
+	auth_macaroons = []
+	auth_macaroons.push(get_macaroon.inspect());
+	auth_macaroons.push(post_macaroon.inspect());
+	res.render('generated_macaroon', { auth_macaroons : auth_macaroons})
 });
 
 router.get('/verify/:macaroon', function(req, res, next){
@@ -43,21 +53,5 @@ router.get('/verify/:macaroon', function(req, res, next){
 										valid : valid});
 });
 
-/*
-var serializeCookie = function(key, value, hrs) {
-	// This is res.cookie’s code without the array management and also ignores signed cookies.
- 	if ('number' == typeof value) value = val.toString();
- 	if ('object' == typeof value) value = JSON.stringify(val);
-
- 	return cookie.serialize(key, value, { expires: new Date(Date.now() + 1000 * 60 * hrs), httpOnly: true });
-};
-
-var setMacaroonCookies = function(res, macaroon) {
-
-	set_cookies = []
-    set_cookies.push(serializeCookie('server-123/GET', macaroon.serialize(), default_cookie_age));
-    set_cookies.push(serializeCookie('server-123/POST', macaroon.serialize(), default_cookie_age));
-    res.header("Set-Cookie", set_cookies);
-};*/
 
 module.exports = router;

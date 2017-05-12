@@ -6,9 +6,9 @@
   </head>
   <body>
     <h1>Macaroon generation result</h1>
-    <p>Serialized macaroon</p>
-    <p><%= macaroon_serial %></p>
-    <p>Macaroon info</p>
-    <p><%= macaroon_info %></p>
+    <% for(var i=0; i<auth_macaroons.length; i++) { %>
+    	<p>Macaroon info</p>
+    	<p><%= auth_macaroons[i] %></p>
+    <% } %>
   </body>
 </html>
