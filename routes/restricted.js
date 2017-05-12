@@ -11,7 +11,6 @@ router.use(macaroons_auth({server_id : 'server-123', secretKey: 'secret'}));
 
 router.get('/', function(req, res, next){
 	res.send('This is a restricted area');
-
 });
 
 module.exports = router;

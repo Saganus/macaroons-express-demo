@@ -28,10 +28,10 @@ router.get('/generate', function(req, res, next){
 	macaroon = MacaroonsBuilder.modify(macaroon).add_first_party_caveat('server-id=server-123').getMacaroon();
 
 	var get_macaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat('http-verb=GET').getMacaroon();
-	get_macaroon 		= MacaroonsBuilder.modify(get_macaroon).add_first_party_caveat('allowed-routes=[/restricted]').getMacaroon();
+	//get_macaroon 		= MacaroonsBuilder.modify(get_macaroon).add_first_party_caveat('allowed-routes=[/restricted]').getMacaroon();
 
     var post_macaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat('http-verb=POST').getMacaroon();
-    post_macaroon 		= MacaroonsBuilder.modify(post_macaroon).add_first_party_caveat('allowed-routes=[/restricted]').getMacaroon();
+    //post_macaroon 		= MacaroonsBuilder.modify(post_macaroon).add_first_party_caveat('allowed-routes=[/restricted]').getMacaroon();
 
 	res.cookie('server-123/GET', get_macaroon.serialize(), { maxAge: default_cookie_age, httpOnly: true });
 	res.cookie('server-123/POST', post_macaroon.serialize(), { maxAge: default_cookie_age, httpOnly: true });

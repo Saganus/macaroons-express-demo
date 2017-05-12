@@ -4,11 +4,6 @@ var MacaroonsVerifier = require('macaroons.js').MacaroonsVerifier;
 
 module.exports = function(options) {
   return function verify_macaroons(req, res, next) {
-    // Implement the middleware function based on the options object
-    console.log('Verifying macaroons');
-    console.log(req.cookies);
-    //console.log(req.cookies[options.server_id + '/GET']);
-
     get_macaroon 	= req.cookies[options.server_id + '/GET']
     post_macaroon 	= req.cookies[options.server_id + '/POST']
 
@@ -19,7 +14,7 @@ module.exports = function(options) {
 	    	var verifier = new MacaroonsVerifier(macaroon);
 	    	verifier.satisfyExact('server-id='+options.server_id);
 	    	verifier.satisfyExact('http-verb=GET');
-	    	verifier.satisfyExact('allowed-routes=[/restricted]')
+
 
 			if(verifier.isValid(options.secretKey)){
 				console.log('Provided Macaroon is valid');
