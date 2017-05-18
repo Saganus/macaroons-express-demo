@@ -16,7 +16,7 @@ module.exports = function(options) {
 	    	verifier.satisfyExact('http-verb=GET');
 
 
-			if(verifier.isValid(options.secretKey)){
+			if(verifier.isValid(options.secret_key)){
 				console.log('Provided Macaroon is valid');
 	    		next();
 	    	}
@@ -38,7 +38,7 @@ module.exports = function(options) {
 	    	verifier.satisfyExact('server-id='+options.server_id);
 	    	verifier.satisfyExact('http-verb=POST');
 
-			if(verifier.isValid(options.secretKey)){
+			if(verifier.isValid(options.secret_key)){
 				console.log('Provided Macaroon is valid');
 	    		next();
 	    	}

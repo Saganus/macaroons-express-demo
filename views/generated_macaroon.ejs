@@ -6,9 +6,11 @@
   </head>
   <body>
     <h1>Macaroon generation result</h1>
-    <% for(var i=0; i<auth_macaroons.length; i++) { %>
-    	<p>Macaroon info</p>
-    	<p><%= auth_macaroons[i] %></p>
+    <% for(var key in auth_macaroons) { %>
+    	<% 	 if (auth_macaroons.hasOwnProperty(key)) { %>
+    		<p>Macaroon info</p>
+    		<p><%= auth_macaroons[key] %></p>
+    	<% } %>
     <% } %>
   </body>
 </html>

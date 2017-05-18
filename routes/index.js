@@ -9,9 +9,11 @@ var MacaroonsVerifier 	= require('macaroons.js').MacaroonsVerifier;
 
 var location 	= "http://www.endofgreatness.net";
 //var secretKey = crypto.randomBytes(32);
-var secretKey 	= "secret";
-var identifier 	= "random32";
+var secret_key 			= "secret";
+var third_party_secret 	= "third-party secret"
+var identifier 			= "random32";
 
+var server_id 			= "restricted123"
 
 var default_cookie_age = 1 * 60 * 60 * 1000;
 
@@ -20,12 +22,41 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-router.get('/generate', function(req, res, next){
-	
-	console.log('Secret: ', secretKey.toString('hex'));
+router.get('/login', function(req, res, next){
+	// if user is valid, etc
+	auth_macaroons = generate_macaroons();
+	//console.log(auth_macaroons);
+	console.log(auth_macaroons['get_macaroon']);
+	console.log(auth_macaroons['post_macaroon']);
+	res.cookie(server_id+'/GET', auth_macaroons['get_macaroon'], { maxAge: default_cookie_age, httpOnly: true });
+	res.cookie(server_id+'/POST', auth_macaroons['post_macaroon'], { maxAge: default_cookie_age, httpOnly: true });
 
-	var macaroon = MacaroonsBuilder.create(location, secretKey, identifier);
-	macaroon = MacaroonsBuilder.modify(macaroon).add_first_party_caveat('server-id=server-123').getMacaroon();
+	res.render('generated_macaroon', { auth_macaroons : auth_macaroons})
+});
+
+router.get('/logout', function(req, res, next){
+	res.clearCookie(server_id+'/GET');
+	res.clearCookie(server_id+'/POST');
+	res.send('Logout successful');
+});
+
+
+router.get('/verify/:macaroon', function(req, res, next){
+	
+	macaroon = MacaroonsBuilder.deserialize(req.params.macaroon);
+	var verifier = new MacaroonsVerifier(macaroon);
+	var valid = verifier.isValid(secret_key);
+
+	res.render('verified_macaroon', { macaroon_serial : macaroon.serialize(),
+										macaroon_info : macaroon.inspect(),
+										valid : valid});
+});
+
+function generate_macaroons(){
+	//console.log('Secret: ', secret_key.toString('hex'));
+
+	var macaroon = MacaroonsBuilder.create(location, secret_key, identifier);
+	macaroon = MacaroonsBuilder.modify(macaroon).add_first_party_caveat('server-id='+server_id).getMacaroon();
 
 	var get_macaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat('http-verb=GET').getMacaroon();
 	//get_macaroon 		= MacaroonsBuilder.modify(get_macaroon).add_first_party_caveat('allowed-routes=[/restricted]').getMacaroon();
@@ -33,25 +64,11 @@ router.get('/generate', function(req, res, next){
     var post_macaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat('http-verb=POST').getMacaroon();
     //post_macaroon 		= MacaroonsBuilder.modify(post_macaroon).add_first_party_caveat('allowed-routes=[/restricted]').getMacaroon();
 
-	res.cookie('server-123/GET', get_macaroon.serialize(), { maxAge: default_cookie_age, httpOnly: true });
-	res.cookie('server-123/POST', post_macaroon.serialize(), { maxAge: default_cookie_age, httpOnly: true });
-	//setMacaroonCookies(res, macaroon);
-	auth_macaroons = []
-	auth_macaroons.push(get_macaroon.inspect());
-	auth_macaroons.push(post_macaroon.inspect());
-	res.render('generated_macaroon', { auth_macaroons : auth_macaroons})
-});
+	auth_macaroons = {}
+	auth_macaroons['get_macaroon'] = get_macaroon.serialize();
+	auth_macaroons['post_macaroon'] = post_macaroon.serialize();
 
-router.get('/verify/:macaroon', function(req, res, next){
-	
-	macaroon = MacaroonsBuilder.deserialize(req.params.macaroon);
-	var verifier = new MacaroonsVerifier(macaroon);
-	var valid = verifier.isValid(secretKey);
-
-	res.render('verified_macaroon', { macaroon_serial : macaroon.serialize(),
-										macaroon_info : macaroon.inspect(),
-										valid : valid});
-});
-
+	return auth_macaroons;
+}
 
 module.exports = router;
