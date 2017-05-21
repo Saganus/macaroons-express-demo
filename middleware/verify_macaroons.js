@@ -4,19 +4,19 @@ var MacaroonsVerifier = require("macaroons.js").MacaroonsVerifier;
 
 module.exports = function(options) {
   return function verify_macaroons(req, res, next) {
-    getMacaroon 	= req.cookies[options.server_id + "/GET"]
-    postMacaroon 	= req.cookies[options.server_id + "/POST"]
+    getMacaroon 	= req.cookies[options.serverId + "/GET"]
+    postMacaroon 	= req.cookies[options.serverId + "/POST"]
 
     console.log(req.method);
     if(req.method == "GET"){
 	    if(typeof getMacaroon != "undefined"){
 	    	macaroon = MacaroonsBuilder.deserialize(getMacaroon);
 	    	var verifier = new MacaroonsVerifier(macaroon);
-	    	verifier.satisfyExact("server-id="+options.server_id);
+	    	verifier.satisfyExact("server-id="+options.serverId);
 	    	verifier.satisfyExact("http-verb=GET");
 
 
-			if(verifier.isValid(options.secret_key)){
+			if(verifier.isValid(options.secretKey)){
 				console.log("Provided Macaroon is valid");
 	    		next();
 	    	}
@@ -35,10 +35,10 @@ module.exports = function(options) {
     	if(typeof postMacaroon != "undefined"){
 	    	macaroon = MacaroonsBuilder.deserialize(postMacaroon);
 	    	var verifier = new MacaroonsVerifier(macaroon);
-	    	verifier.satisfyExact("server-id="+options.server_id);
+	    	verifier.satisfyExact("server-id="+options.serverId);
 	    	verifier.satisfyExact("http-verb=POST");
 
-			if(verifier.isValid(options.secret_key)){
+			if(verifier.isValid(options.secretKey)){
 				console.log("Provided Macaroon is valid");
 	    		next();
 	    	}
