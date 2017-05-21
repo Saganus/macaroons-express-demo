@@ -53,9 +53,7 @@ module.exports = function(options) {
 	    	res.sendStatus("401");
 		}
     }
-
-
-  }
-}
+  };
+};
 
 

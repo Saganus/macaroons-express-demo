@@ -10,6 +10,8 @@ var scryptParameters = scrypt.paramsSync(0.1);
 var MacaroonsBuilder 	= require("macaroons.js").MacaroonsBuilder;
 var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
 
+var MacaroonAuthUtils	= require("../utils/macaroon_auth.js");
+
 var location 	= "http://www.endofgreatness.net";
 //var secretKey = crypto.randomBytes(32);
 var secretKey 			= "secret";
@@ -48,14 +50,15 @@ router.post("/login", function(req, res, next){
 
 	if(authenticate(user, key)){
 		// if user is valid, etc
-		authMacaroons = generate_macaroons();
+		authMacaroons = MacaroonAuthUtils.generateMacaroons(location, secretKey, identifier);
 		//console.log(authMacaroons);
 		console.log(authMacaroons["getMacaroon"]);
 		console.log(authMacaroons["postMacaroon"]);
 		res.cookie(serverId+"/GET", authMacaroons["getMacaroon"], { maxAge: defaultCookieAge, httpOnly: true });
 		res.cookie(serverId+"/POST", authMacaroons["postMacaroon"], { maxAge: defaultCookieAge, httpOnly: true });
 
-		res.render("generated_macaroon", { authMacaroons : authMacaroons});
+		//res.render("generated_macaroon", { authMacaroons : authMacaroons});
+		res.send("Successfully logged in");
 	}
 	else{
 		res.sendStatus("401");
@@ -82,34 +85,14 @@ router.get("/verify/:macaroon", function(req, res, next){
 										valid : valid});
 });
 
-function generate_macaroons(){
-	//console.log("Secret: ", secretKey.toString("hex"));
-
-	var macaroon = MacaroonsBuilder.create(location, secretKey, identifier);
-	macaroon = MacaroonsBuilder.modify(macaroon).add_first_party_caveat("server-id="+serverId).getMacaroon();
-
-	var getMacaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat("http-verb=GET").getMacaroon();
-	//getMacaroon 		= MacaroonsBuilder.modify(getMacaroon).add_first_party_caveat("allowed-routes=[/restricted]").getMacaroon();
-
-    var postMacaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat("http-verb=POST").getMacaroon();
-    //postMacaroon 		= MacaroonsBuilder.modify(postMacaroon).add_first_party_caveat("allowed-routes=[/restricted]").getMacaroon();
-
-	authMacaroons = {}
-	authMacaroons["getMacaroon"] = getMacaroon.serialize();
-	authMacaroons["postMacaroon"] = postMacaroon.serialize();
-
-	return authMacaroons;
-}
-
 function registerNewUser(user, key){
-	var kdfResult = scrypt.kdfSync("pass", scryptParameters);
+	var kdfResult = scrypt.kdfSync(key, scryptParameters);
 	defaultPass = kdfResult.toString("hex");
 	console.log("New user registered: " + defaultPass);
 }
 
 function authenticate(user, key){
-
-	return scrypt.verifyKdfSync(Buffer.from(defaultPass, "hex"), "pass");
+	return scrypt.verifyKdfSync(Buffer.from(defaultPass, "hex"), key);
 }
 
 module.exports = router;
