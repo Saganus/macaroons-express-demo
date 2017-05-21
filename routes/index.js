@@ -4,6 +4,9 @@ var router 	= express.Router();
 //const crypto = require('crypto')
 var cookie 	= require('cookie');
 
+var scrypt = require("scrypt");
+var scryptParameters = scrypt.paramsSync(0.1);
+
 var MacaroonsBuilder 	= require('macaroons.js').MacaroonsBuilder;
 var MacaroonsVerifier 	= require('macaroons.js').MacaroonsVerifier;
 
@@ -17,21 +20,48 @@ var server_id 			= "restricted123"
 
 var default_cookie_age = 1 * 60 * 60 * 1000;
 
+var defaultPass = 'pass';
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+ 	res.render('index', { title: 'Express' });
 });
 
 router.get('/login', function(req, res, next){
-	// if user is valid, etc
-	auth_macaroons = generate_macaroons();
-	//console.log(auth_macaroons);
-	console.log(auth_macaroons['get_macaroon']);
-	console.log(auth_macaroons['post_macaroon']);
-	res.cookie(server_id+'/GET', auth_macaroons['get_macaroon'], { maxAge: default_cookie_age, httpOnly: true });
-	res.cookie(server_id+'/POST', auth_macaroons['post_macaroon'], { maxAge: default_cookie_age, httpOnly: true });
+	res.render('login_form', {});
+});
 
-	res.render('generated_macaroon', { auth_macaroons : auth_macaroons})
+router.post('/register', function(req, res, next){
+
+	var user = req.body.user;
+	var key = req.body.pass;
+
+	registerNewUser(user, key);
+
+	res.send('New user registered successfully');
+});
+
+router.post('/login', function(req, res, next){
+
+	var user = req.body.user;
+	var key = req.body.pass;
+
+	if(authenticate(user, key)){
+		// if user is valid, etc
+		auth_macaroons = generate_macaroons();
+		//console.log(auth_macaroons);
+		console.log(auth_macaroons['get_macaroon']);
+		console.log(auth_macaroons['post_macaroon']);
+		res.cookie(server_id+'/GET', auth_macaroons['get_macaroon'], { maxAge: default_cookie_age, httpOnly: true });
+		res.cookie(server_id+'/POST', auth_macaroons['post_macaroon'], { maxAge: default_cookie_age, httpOnly: true });
+
+		res.render('generated_macaroon', { auth_macaroons : auth_macaroons});
+	}
+	else{
+		res.sendStatus('401');
+	}
+
+	
 });
 
 router.get('/logout', function(req, res, next){
@@ -69,6 +99,17 @@ function generate_macaroons(){
 	auth_macaroons['post_macaroon'] = post_macaroon.serialize();
 
 	return auth_macaroons;
+}
+
+function registerNewUser(user, key){
+	var kdfResult = scrypt.kdfSync('pass', scryptParameters);
+	defaultPass = kdfResult.toString('hex');
+	console.log('New user registered: ' + defaultPass);
+}
+
+function authenticate(user, key){
+
+	return scrypt.verifyKdfSync(Buffer.from(defaultPass, 'hex'), 'pass');
 }
 
 module.exports = router;
