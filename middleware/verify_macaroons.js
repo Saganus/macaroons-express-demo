@@ -4,8 +4,13 @@ var MacaroonsVerifier = require("macaroons.js").MacaroonsVerifier;
 
 module.exports = function(options) {
   return function verify_macaroons(req, res, next) {
+  	var userId		= req.cookies[options.serverId + "/userId"];
+
     getMacaroon 	= req.cookies[options.serverId + "/GET"]
     postMacaroon 	= req.cookies[options.serverId + "/POST"]
+
+
+    var policy = getPolicy(userId);
 
     console.log(req.method);
     if(req.method == "GET"){
@@ -56,4 +61,7 @@ module.exports = function(options) {
   };
 };
 
+function getPolicy(userId){
+
+};
 

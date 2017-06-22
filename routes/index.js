@@ -3,6 +3,7 @@ var router 	= express.Router();
 
 //const crypto = require("crypto")
 var cookie 	= require("cookie");
+var _ = require('lodash');
 
 var scrypt = require("scrypt");
 var scryptParameters = scrypt.paramsSync(0.1);
@@ -50,10 +51,16 @@ router.post("/login", function(req, res, next){
 
 	if(authenticate(user, key)){
 		// if user is valid, etc
-		authMacaroons = MacaroonAuthUtils.generateMacaroons(location, secretKey, identifier);
+		var userPolicy = getUserPolicy(user);
+		console.log(userPolicy);
+		//authMacaroons = MacaroonAuthUtils.generateMacaroons(location, secretKey, identifier);
+		var macaroonPolicies = getMacaroonPolicies(userPolicy)
+		authMacaroons = MacaroonAuthUtils.generateMacaroons(macaroonPolicies);
+
 		//console.log(authMacaroons);
 		console.log(authMacaroons["getMacaroon"]);
 		console.log(authMacaroons["postMacaroon"]);
+		res.cookie(serverId+"/userId", user, { maxAge: defaultCookieAge, httpOnly: true });
 		res.cookie(serverId+"/GET", authMacaroons["getMacaroon"], { maxAge: defaultCookieAge, httpOnly: true });
 		res.cookie(serverId+"/POST", authMacaroons["postMacaroon"], { maxAge: defaultCookieAge, httpOnly: true });
 
@@ -89,10 +96,47 @@ function registerNewUser(user, key){
 	var kdfResult = scrypt.kdfSync(key, scryptParameters);
 	defaultPass = kdfResult.toString("hex");
 	console.log("New user registered: " + defaultPass);
-}
+};
+
+function getUserPolicy(user){
+	var userPolicy = {
+		name : "memberAccess",
+		description: "Access policy for members of the site",
+		serverId : serverId,
+		expires : 60*60*24,
+		scopes : [
+			{
+				name : "public",
+				routes : ["/", "/login"],
+				methods : ["GET"]
+			},
+			{
+				name : "resetPassword",
+				routes : ["/resetPassword"],
+				methods : ["POST"]
+			},
+			{
+				name : "restricted",
+				routes : ["/restricted"],
+				methods : ["GET", "POST"]
+			}
+		]
+	}
+	return userPolicy
+};
+
+function getMacaroonPolicies(userPolicy){
+	var methods = ["GET", "POST", "PUT", "DELETE"];
+
+	getScope = _.filter(userPolicy, {scopes : [{methods: "GET"}]});
+	console.log(getScope)
+	return getScope
+
+};
 
 function authenticate(user, key){
-	return scrypt.verifyKdfSync(Buffer.from(defaultPass, "hex"), key);
-}
+	authenticated = scrypt.verifyKdfSync(Buffer.from(defaultPass, "hex"), key);
+	return authenticated
+};
 
 module.exports = router;
