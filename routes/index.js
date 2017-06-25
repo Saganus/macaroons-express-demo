@@ -54,15 +54,14 @@ router.post("/login", function(req, res, next){
 		var userPolicy = getUserPolicy(user);
 		console.log(userPolicy);
 		//authMacaroons = MacaroonAuthUtils.generateMacaroons(location, secretKey, identifier);
-		var macaroonPolicies = getMacaroonPolicies(userPolicy)
-		authMacaroons = MacaroonAuthUtils.generateMacaroons(macaroonPolicies);
+		authMacaroons = MacaroonAuthUtils.generateMacaroons(userPolicy, location, secretKey, identifier);
 
 		//console.log(authMacaroons);
-		console.log(authMacaroons["getMacaroon"]);
-		console.log(authMacaroons["postMacaroon"]);
+		console.log(authMacaroons["GET"]);
+		console.log(authMacaroons["POST"]);
 		res.cookie(serverId+"/userId", user, { maxAge: defaultCookieAge, httpOnly: true });
-		res.cookie(serverId+"/GET", authMacaroons["getMacaroon"], { maxAge: defaultCookieAge, httpOnly: true });
-		res.cookie(serverId+"/POST", authMacaroons["postMacaroon"], { maxAge: defaultCookieAge, httpOnly: true });
+		res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
+		res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
 
 		//res.render("generated_macaroon", { authMacaroons : authMacaroons});
 		res.send("Successfully logged in");
@@ -122,17 +121,13 @@ function getUserPolicy(user){
 			}
 		]
 	}
+
 	return userPolicy
 };
 
-function getMacaroonPolicies(userPolicy){
-	var methods = ["GET", "POST", "PUT", "DELETE"];
 
-	getScope = _.filter(userPolicy, {scopes : [{methods: "GET"}]});
-	console.log(getScope)
-	return getScope
 
-};
+
 
 function authenticate(user, key){
 	authenticated = scrypt.verifyKdfSync(Buffer.from(defaultPass, "hex"), key);
