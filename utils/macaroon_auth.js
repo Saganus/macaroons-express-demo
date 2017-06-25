@@ -9,13 +9,16 @@ function getMacaroonScopes(userPolicy){
 	var putScopes 		= getScopeRoutes(userPolicy.scopes, "PUT");
 	var deleteScopes 	= getScopeRoutes(userPolicy.scopes, "DELETE");
 
-	console.log(getScopes);
+	
 
 	var macaroonScopes = {}
 	macaroonScopes["GET"] 	= getScopes;
 	macaroonScopes["POST"] 	= postScopes;
 	macaroonScopes["PUT"] 	= putScopes;
 	macaroonScopes["DELETE"] 	= deleteScopes;
+
+	//console.log("macaroon scopes:");
+	//console.log(macaroonScopes);
 
 	return macaroonScopes;
 };
@@ -47,8 +50,8 @@ function generateMacaroons(userPolicy, location, secretKey, identifier){
 		}
 
 	});
-
-	console.log(authMacaroons);
+	//console.log("macaroons:");
+	//console.log(authMacaroons);
 
 	return authMacaroons;
 };

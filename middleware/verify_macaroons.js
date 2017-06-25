@@ -19,7 +19,7 @@ module.exports = function(options) {
 	    	var verifier = new MacaroonsVerifier(macaroon);
 	    	verifier.satisfyExact("server-id="+options.serverId);
 	    	verifier.satisfyExact("http-verb=GET");
-
+	    	verifier.satisfyGeneral(RouteCaveatVerifier);
 
 			if(verifier.isValid(options.secretKey)){
 				console.log("Provided Macaroon is valid");
@@ -59,6 +59,14 @@ module.exports = function(options) {
 		}
     }
   };
+};
+
+var CAVEAT_PREFIX = /allowed-routes=(.*)*/;
+function RouteCaveatVerifier(caveat) {
+    if (CAVEAT_PREFIX.test(caveat)) {
+    	return true;
+    }
+    return false;
 };
 
 function getPolicy(userId){
