@@ -2,6 +2,9 @@ var MacaroonsBuilder 	= require("macaroons.js").MacaroonsBuilder;
 var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
 var _ = require('lodash');
 
+var caveatKey = "secret2";
+var caveatId = "random2-32"
+
 function getMacaroonScopes(userPolicy){
 
 	var getScopes 		= getScopeRoutes(userPolicy.scopes, "GET");
@@ -46,7 +49,7 @@ function generateMacaroons(userPolicy, location, secretKey, identifier){
 		console.log(key)
 		console.log(macaroonScopes[key])
 		if (macaroonScopes[key].length > 0){
-			authMacaroons[key] = generateRestrictedMacaroon(serverMacaroon, key, macaroonScopes[key]);
+			authMacaroons[key] = generateRestrictedMacaroon(serverMacaroon, key, macaroonScopes[key], location);
 		}
 
 	});
@@ -56,20 +59,31 @@ function generateMacaroons(userPolicy, location, secretKey, identifier){
 	return authMacaroons;
 };
 
-function generateRestrictedMacaroon(serverMacaroon, method, scopes){
+function generateRestrictedMacaroon(serverMacaroon, method, scopes, location){
 	restrictedMacaroon = addMethodToMacaroon(serverMacaroon, method);
-	restrictedMacaroon = addScopesToMacaroon(restrictedMacaroon, scopes);
-
+	//restrictedMacaroon = addScopesToMacaroon(restrictedMacaroon, scopes);
+	restrictedMacaroon = addDisjunctionCaveat(restrictedMacaroon, location, caveatKey, caveatId);
 	return restrictedMacaroon.serialize();
 }
 
+function addDisjunctionCaveat(macaroon, location, caveatKey, identifier){
+	return MacaroonsBuilder.modify(macaroon)
+		.add_third_party_caveat(location, caveatKey, identifier)
+		.getMacaroon();
+};
+
 function addScopesToMacaroon(macaroon, scopes){
-	scopeCaveat = scopes.join(",")
-	return MacaroonsBuilder.modify(macaroon).add_first_party_caveat("allowed-routes="+scopeCaveat).getMacaroon();
+	scopeCaveat = scopes.join(",");
+	
+	return MacaroonsBuilder.modify(macaroon)
+		.add_first_party_caveat("allowed-routes="+scopeCaveat)
+		.getMacaroon();
 };
 
 function addMethodToMacaroon(macaroon, method){
-	return MacaroonsBuilder.modify(macaroon).add_first_party_caveat("http-verb="+method).getMacaroon();
+	return MacaroonsBuilder.modify(macaroon)
+		.add_first_party_caveat("http-verb="+method)
+		.getMacaroon();
 };
 
 /*

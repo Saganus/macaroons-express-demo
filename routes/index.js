@@ -3,7 +3,7 @@ var router 	= express.Router();
 
 //const crypto = require("crypto")
 var cookie 	= require("cookie");
-var _ = require('lodash');
+
 
 var scrypt = require("scrypt");
 var scryptParameters = scrypt.paramsSync(0.1);
@@ -57,8 +57,8 @@ router.post("/login", function(req, res, next){
 		authMacaroons = MacaroonAuthUtils.generateMacaroons(userPolicy, location, secretKey, identifier);
 
 		//console.log(authMacaroons);
-		console.log(authMacaroons["GET"]);
-		console.log(authMacaroons["POST"]);
+		//console.log(authMacaroons["GET"]);
+		//console.log(authMacaroons["POST"]);
 		res.cookie(serverId+"/userId", user, { maxAge: defaultCookieAge, httpOnly: true });
 		res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
 		res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
