@@ -25,14 +25,15 @@ module.exports = function(options) {
 	    	var verifier = new MacaroonsVerifier(macaroon);
 	    	verifier.satisfyExact("server-id="+options.serverId);
 	    	verifier.satisfyExact("http-verb=GET");
+	    	verifier.satisfyExact("route="+req.path);
 
-	    	var disjunctionDischarge = getDisjunctionDischarge(location, caveatKey, caveatId);
+	    	var disjunctionDischarge = getDisjunctionDischarge(location, caveatKey, caveatId, req.path);
 	    	console.log("disjunctionDischarge Macaroon:");
 	    	console.log(disjunctionDischarge.inspect());
 
 	    	var dp = MacaroonsBuilder.modify(macaroon).prepare_for_request(disjunctionDischarge).getMacaroon();
 	    	console.log("GET Macaroon after prepare for request:");
-	    	console.log(dp.inspect());
+	    	console.log(dp.serialize());
 
 	    	verifier.satisfy3rdParty(dp);
 
@@ -76,14 +77,38 @@ module.exports = function(options) {
   };
 };
 
-function getDisjunctionDischarge(location, caveatKey, identifier){
+function getDisjunctionDischarge(location, caveatKey, identifier, path){
 	dischargeMacaroon = MacaroonsBuilder.create(location, caveatKey, identifier);
-	dischargeMacaroon = MacaroonsBuilder.modify(dischargeMacaroon).getMacaroon();
+	dischargeMacaroon = MacaroonsBuilder.modify(dischargeMacaroon).add_first_party_caveat("route="+path) .getMacaroon();
 	return dischargeMacaroon;
 };
 
 
 function getPolicy(userId){
+	var userPolicy = {
+		name : "memberAccess",
+		description: "Access policy for members of the site",
+		serverId : "restricted123",
+		expires : 60*60*24,
+		scopes : [
+			{
+				name : "public",
+				routes : ["/", "/login"],
+				methods : ["GET"]
+			},
+			{
+				name : "resetPassword",
+				routes : ["/resetPassword"],
+				methods : ["POST"]
+			},
+			{
+				name : "restricted",
+				routes : ["/restricted"],
+				methods : ["GET", "POST"]
+			}
+		]
+	}
 
+	return userPolicy
 };
 
