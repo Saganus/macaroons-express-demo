@@ -1,6 +1,6 @@
 var express = require("express");
 var router 	= express.Router();
-
+var MongoClient = require('mongodb').MongoClient;
 //const crypto = require("crypto")
 var cookie 	= require("cookie");
 
@@ -37,13 +37,18 @@ router.get("/login", function(req, res, next){
 router.post("/register", function(req, res, next){
 
 	var user = req.body.user;
-	var key = req.body.pass;
+	var pass = req.body.pass;
+	//console.log("user: " + user + ", pass: " +pass);
+	if (typeof user !== 'undefined' && user !== '' 
+		&& typeof pass !== 'undefined' && pass !== '' ){
+		registerNewUser(user, pass, req.db, res);
+	}
+	else{
+		res.status(400).send('Bad Request: User or password field undefined or empty');
+	}
 
-	registerNewUser(user, key);
-
-	res.send("New user registered successfully");
 });
-
+/*
 router.post("/login", function(req, res, next){
 
 	var user = req.body.user;
@@ -72,32 +77,43 @@ router.post("/login", function(req, res, next){
 
 	
 });
-
+*/
+/*
 router.get("/logout", function(req, res, next){
 	res.clearCookie(serverId+"/GET");
 	res.clearCookie(serverId+"/POST");
 	res.send("Logout successful");
 });
+*/
 
 
-router.get("/verify/:macaroon", function(req, res, next){
-	
-	macaroon = MacaroonsBuilder.deserialize(req.params.macaroon);
-	var verifier = new MacaroonsVerifier(macaroon);
-	var valid = verifier.isValid(secretKey);
+function registerNewUser(userId, pass, db, res){
 
-	res.render("verified_macaroon", { macaroon_serial : macaroon.serialize(),
-										macaroon_info : macaroon.inspect(),
-										valid : valid});
-});
-
-function registerNewUser(user, key){
-	var kdfResult = scrypt.kdfSync(key, scryptParameters);
-	defaultPass = kdfResult.toString("hex");
-	console.log("New user registered: " + defaultPass);
+	var kdfResult = scrypt.kdfSync(pass, scryptParameters);
+	pass = kdfResult.toString("hex");
+	var userPolicy = getUserPolicy(userId)
+	inserUser(db, userId, pass, userPolicy, res);
 };
 
-function getUserPolicy(user){
+function inserUser(db, userId, pass, userPolicy, res) {
+  	// Get the ACEs collection
+ 	var collection = db.collection('ACEs');
+  	// Insert  user
+  	collection.find({userId : userId}).count(function(err, result){
+  		if(result > 0){
+  			res.status(403).send("Forbidden: Can\'t add user");
+  		}
+  		else{
+	  		collection.insertOne({userId:userId, pass: pass, userPolicy: userPolicy}, function(err, result) {
+	    		console.log("Registered a new user");
+	    		res.status(200).send("OK: User registered");
+	  		});	
+  		}
+  	});
+  	
+};
+
+function getUserPolicy(userId){
 	var userPolicy = {
 		name : "memberAccess",
 		description: "Access policy for members of the site",
@@ -126,12 +142,11 @@ function getUserPolicy(user){
 };
 
 
-
-
-
+/*
 function authenticate(user, key){
 	authenticated = scrypt.verifyKdfSync(Buffer.from(defaultPass, "hex"), key);
 	return authenticated
 };
+*/
 
 module.exports = router;
