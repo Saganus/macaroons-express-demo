@@ -48,13 +48,17 @@ router.post("/register", function(req, res, next){
 	}
 
 });
-/*
+
 router.post("/login", function(req, res, next){
 
 	var user = req.body.user;
 	var key = req.body.pass;
 
-	if(authenticate(user, key)){
+	authenticate(user, key, req.db, res);
+
+	/*
+	if(authenticate(user, key, req.db, res)){
+		
 		// if user is valid, etc
 		var userPolicy = getUserPolicy(user);
 		console.log(userPolicy);
@@ -70,14 +74,16 @@ router.post("/login", function(req, res, next){
 
 		//res.render("generated_macaroon", { authMacaroons : authMacaroons});
 		res.send("Successfully logged in");
+		
 	}
 	else{
 		res.sendStatus("401");
 	}
+	*/
 
 	
 });
-*/
+
 /*
 router.get("/logout", function(req, res, next){
 	res.clearCookie(serverId+"/GET");
@@ -142,11 +148,32 @@ function getUserPolicy(userId){
 };
 
 
-/*
-function authenticate(user, key){
-	authenticated = scrypt.verifyKdfSync(Buffer.from(defaultPass, "hex"), key);
-	return authenticated
+function authenticate(userId, pass, db, res){
+	var collection = db.collection('ACEs');
+	collection.findOne({userId : userId}, function(err, result){
+		var authenticated = scrypt.verifyKdfSync(Buffer.from(result.pass, "hex"), pass);	
+		if(authenticated){
+			var userPolicy = getUserPolicy(userId);
+			console.log(userPolicy);
+			//authMacaroons = MacaroonAuthUtils.generateMacaroons(location, secretKey, identifier);
+			authMacaroons = MacaroonAuthUtils.generateMacaroons(userPolicy, location, secretKey, identifier);
+
+			//console.log(authMacaroons);
+			//console.log(authMacaroons["GET"]);
+			//console.log(authMacaroons["POST"]);
+			res.cookie(serverId+"/userId", userId, { maxAge: defaultCookieAge, httpOnly: true });
+			res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
+			res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
+
+			//res.render("generated_macaroon", { authMacaroons : authMacaroons});
+			res.send("Successfully logged in");
+		}
+		else{
+			res.status("401").send("Unauthorized");
+		}
+	});
+	
 };
-*/
+
 
 module.exports = router;
