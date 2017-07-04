@@ -1,12 +1,12 @@
-var express = require("express");
-var router 	= express.Router();
+var express 	= require("express");
+var router 		= express.Router();
 var MongoClient = require('mongodb').MongoClient;
-//const crypto = require("crypto")
-var cookie 	= require("cookie");
+const crypto 	= require("crypto")
+var cookie 		= require("cookie");
 
 
-var scrypt = require("scrypt");
-var scryptParameters = scrypt.paramsSync(0.1);
+var scrypt 				= require("scrypt");
+var scryptParameters 	= scrypt.paramsSync(0.1);
 
 var MacaroonsBuilder 	= require("macaroons.js").MacaroonsBuilder;
 var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
@@ -15,13 +15,13 @@ var MacaroonAuthUtils	= require("../utils/macaroon_auth.js");
 
 var location 	= "http://www.endofgreatness.net";
 //var secretKey = crypto.randomBytes(32);
-var secretKey 			= "secret";
+var secretKey 			= "3ec8441288c7220bbc5f9b8d144897b28615c4557e0ce5b179408bdd8c7c5779";
 var thirdPartySecret 	= "third-party secret";
 var identifier 			= "random32";
 
 var serverId 			= "restricted123"
 
-var defaultCookieAge = 1 * 60 * 60 * 1000;
+var defaultCookieAge 	= 1 * 60 * 60 * 1000;
 
 var defaultPass = "pass";
 
@@ -33,6 +33,8 @@ router.get("/", function(req, res, next) {
 router.get("/login", function(req, res, next){
 	res.render("login_form", {});
 });
+
+
 
 router.post("/register", function(req, res, next){
 
@@ -110,6 +112,7 @@ function inserUser(db, userId, pass, userPolicy, res) {
   			res.status(403).send("Forbidden: Can\'t add user");
   		}
   		else{
+  			//var secretKey = crypto.randomBytes(32).toString('hex');
 	  		collection.insertOne({userId:userId, pass: pass, userPolicy: userPolicy}, function(err, result) {
 	    		console.log("Registered a new user");
 	    		res.status(200).send("OK: User registered");
@@ -150,12 +153,13 @@ function getUserPolicy(userId){
 
 function authenticate(userId, pass, db, res){
 	var collection = db.collection('ACEs');
-	collection.findOne({userId : userId}, function(err, result){
-		var authenticated = scrypt.verifyKdfSync(Buffer.from(result.pass, "hex"), pass);	
+	collection.findOne({userId : userId}, function(err, user){
+		var authenticated = scrypt.verifyKdfSync(Buffer.from(user.pass, "hex"), pass);	
 		if(authenticated){
 			var userPolicy = getUserPolicy(userId);
 			console.log(userPolicy);
 			//authMacaroons = MacaroonAuthUtils.generateMacaroons(location, secretKey, identifier);
+			//console.log(user.secretKey)
 			authMacaroons = MacaroonAuthUtils.generateMacaroons(userPolicy, location, secretKey, identifier);
 
 			//console.log(authMacaroons);
@@ -164,6 +168,8 @@ function authenticate(userId, pass, db, res){
 			res.cookie(serverId+"/userId", userId, { maxAge: defaultCookieAge, httpOnly: true });
 			res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
 			res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
+			res.cookie(serverId+"/PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
+			res.cookie(serverId+"/DELETE", authMacaroons["DELETE"], { maxAge: defaultCookieAge, httpOnly: true });
 
 			//res.render("generated_macaroon", { authMacaroons : authMacaroons});
 			res.send("Successfully logged in");

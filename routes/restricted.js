@@ -7,7 +7,7 @@ var macaroonsAuth = require("../middleware/verify_macaroons");
 
 /* GET home page. */
 
-router.use(macaroonsAuth({serverId : "restricted123", secretKey: "secret"}));
+router.use(macaroonsAuth({serverId : "restricted123"}));
 
 router.get("/", function(req, res, next){
 	res.send("Succesfully accessed a restricted area");

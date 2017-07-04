@@ -1,9 +1,12 @@
 var MacaroonsBuilder 	= require("macaroons.js").MacaroonsBuilder;
 var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
+
 var _ = require('lodash');
 
-var caveatKey = "secret2";
-var caveatId = "random2-32"
+var caveatKey 			= "secret2";
+var caveatId 			= "random2-32"
+// in minutes from now
+var defaultExpiration 	= 5; 
 
 function getMacaroonScopes(userPolicy){
 
@@ -12,12 +15,10 @@ function getMacaroonScopes(userPolicy){
 	var putScopes 		= getScopeRoutes(userPolicy.scopes, "PUT");
 	var deleteScopes 	= getScopeRoutes(userPolicy.scopes, "DELETE");
 
-	
-
 	var macaroonScopes = {}
-	macaroonScopes["GET"] 	= getScopes;
-	macaroonScopes["POST"] 	= postScopes;
-	macaroonScopes["PUT"] 	= putScopes;
+	macaroonScopes["GET"] 		= getScopes;
+	macaroonScopes["POST"] 		= postScopes;
+	macaroonScopes["PUT"] 		= putScopes;
 	macaroonScopes["DELETE"] 	= deleteScopes;
 
 	//console.log("macaroon scopes:");
@@ -61,8 +62,9 @@ function generateMacaroons(userPolicy, location, secretKey, identifier){
 
 function generateRestrictedMacaroon(serverMacaroon, method, scopes, location){
 	restrictedMacaroon = addMethodToMacaroon(serverMacaroon, method);
-	//restrictedMacaroon = addScopesToMacaroon(restrictedMacaroon, scopes);
-	restrictedMacaroon = addDisjunctionCaveat(restrictedMacaroon, location, caveatKey, caveatId);
+	restrictedMacaroon = addScopesToMacaroon(restrictedMacaroon, scopes);
+	restrictedMacaroon = addTimeExpirationToMacaroon(restrictedMacaroon, defaultExpiration);
+	//restrictedMacaroon = addDisjunctionCaveat(restrictedMacaroon, location, caveatKey, caveatId);
 	return restrictedMacaroon.serialize();
 }
 
@@ -76,15 +78,24 @@ function addScopesToMacaroon(macaroon, scopes){
 	scopeCaveat = scopes.join(",");
 	
 	return MacaroonsBuilder.modify(macaroon)
-		.add_first_party_caveat("allowed-routes="+scopeCaveat)
+		.add_first_party_caveat("routes="+scopeCaveat)
 		.getMacaroon();
 };
 
 function addMethodToMacaroon(macaroon, method){
 	return MacaroonsBuilder.modify(macaroon)
-		.add_first_party_caveat("http-verb="+method)
+		.add_first_party_caveat("method="+method)
 		.getMacaroon();
 };
+
+function addTimeExpirationToMacaroon(macaroon, minutesFromNow){
+	var expiration 	= new Date();
+	expiration 		= new Date(expiration.getTime() + (minutesFromNow * 60 * 1000));
+
+	return MacaroonsBuilder.modify(macaroon)
+		.add_first_party_caveat("time < "+ expiration.toJSON().toString())
+		.getMacaroon();
+};	
 
 /*
 function generateMacaroons(location, secretKey, identifier){
