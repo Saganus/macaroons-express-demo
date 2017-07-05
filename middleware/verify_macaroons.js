@@ -42,10 +42,6 @@ function validateRequest(serverId, serializedMacaroon, method, path, db){
             var collection = db.collection('ACEs');
             collection.findOne({identifier : macaroon.identifier})
                 .then(function(user){
-                    console.log("user found for request validation: " + user);
-                    
-                    console.log(method + " Macaroon:");
-                    console.log(macaroon.inspect());
                     var verifier = new MacaroonsVerifier(macaroon);
                     verifier.satisfyExact("server-id="+serverId);
                     verifier.satisfyExact("method="+method);
@@ -55,8 +51,7 @@ function validateRequest(serverId, serializedMacaroon, method, path, db){
                         var match = routesCaveatRegex.exec(caveat);
                         if (match !== null) {
                             var parsedRoutes = match[1].split(",");
-                            console.log("Allowed routes: ");
-                            console.log(parsedRoutes);
+
                             if(parsedRoutes.indexOf(path) > -1){
                                 return true;
                             }
@@ -71,7 +66,6 @@ function validateRequest(serverId, serializedMacaroon, method, path, db){
                     var secretKey = Buffer.from(secretKeyHash, "hex");
 
                     if(verifier.isValid(secretKey)){
-                        console.log("Provided Macaroon is valid");
                         return resolve(true);
                     }
                     else{

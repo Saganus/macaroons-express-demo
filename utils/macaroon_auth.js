@@ -3,8 +3,9 @@ var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
 
 var _ = require('lodash');
 
-//var caveatKey 			= "secret2";
+//var caveatKey	 		= "secret2";
 //var caveatId 			= "random2-32"
+
 // in minutes from now
 var defaultExpiration 	= 5; 
 
@@ -15,14 +16,11 @@ function getMacaroonScopes(userPolicy){
 	var putScopes 		= getScopeRoutes(userPolicy.scopes, "PUT");
 	var deleteScopes 	= getScopeRoutes(userPolicy.scopes, "DELETE");
 
-	var macaroonScopes = {}
+	var macaroonScopes 			= {};
 	macaroonScopes["GET"] 		= getScopes;
 	macaroonScopes["POST"] 		= postScopes;
 	macaroonScopes["PUT"] 		= putScopes;
 	macaroonScopes["DELETE"] 	= deleteScopes;
-
-	//console.log("macaroon scopes:");
-	//console.log(macaroonScopes);
 
 	return macaroonScopes;
 };
@@ -30,8 +28,7 @@ function getMacaroonScopes(userPolicy){
 function getScopeRoutes(scopes, method){
 	return _.flatMap(scopes, function(scope) { 
 		if (scope.methods.indexOf(method) > -1){
-			return scope.routes
-		}
+			return scope.routes;		}
 		else{
 			return [];
 		}
@@ -47,15 +44,11 @@ function generateMacaroons(userPolicy, location, secretKey, identifier){
 	var authMacaroons = {};
 
 	Object.keys(macaroonScopes).forEach(function(key, index){
-		console.log(key)
-		console.log(macaroonScopes[key])
 		if (macaroonScopes[key].length > 0){
 			authMacaroons[key] = generateRestrictedMacaroon(serverMacaroon, key, macaroonScopes[key], location);
 		}
 
 	});
-	//console.log("macaroons:");
-	//console.log(authMacaroons);
 
 	return authMacaroons;
 };
@@ -96,28 +89,6 @@ function addTimeExpirationToMacaroon(macaroon, minutesFromNow){
 		.add_first_party_caveat("time < "+ expiration.toJSON().toString())
 		.getMacaroon();
 };	
-
-/*
-function generateMacaroons(location, secretKey, identifier){
-	//console.log("Secret: ", secretKey.toString("hex"));
-
-	var macaroon = MacaroonsBuilder.create(location, secretKey, identifier);
-	macaroon = MacaroonsBuilder.modify(macaroon).add_first_party_caveat("server-id="+serverId).getMacaroon();
-	
-
-	var getMacaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat("http-verb=GET").getMacaroon();
-	//getMacaroon 		= MacaroonsBuilder.modify(getMacaroon).add_first_party_caveat("allowed-routes=[/restricted]").getMacaroon();
-
-    var postMacaroon 	= MacaroonsBuilder.modify(macaroon).add_first_party_caveat("http-verb=POST").getMacaroon();
-    //postMacaroon 		= MacaroonsBuilder.modify(postMacaroon).add_first_party_caveat("allowed-routes=[/restricted]").getMacaroon();
-
-	authMacaroons = {}
-	authMacaroons["getMacaroon"] = getMacaroon.serialize();
-	authMacaroons["postMacaroon"] = postMacaroon.serialize();
-
-	return authMacaroons;
-};
-*/
 
 
 module.exports = {

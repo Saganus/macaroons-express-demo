@@ -43,10 +43,16 @@ router.post("/register", function(req, res, next){
 
 	var user = req.body.user;
 	var pass = req.body.pass;
-	//console.log("user: " + user + ", pass: " +pass);
+
 	if (typeof user !== 'undefined' && user !== '' 
 		&& typeof pass !== 'undefined' && pass !== '' ){
-		registerNewUser(user, pass, req.db, res);
+		registerNewUser(user, pass, req.db)
+			.then(function(){
+				res.send("User " + user + " successfully registered");
+			}).catch(function(error){
+				console.log(error);
+				res.sendStatus("401");
+			});
 	}
 	else{
 		res.status(400).send('Bad Request: User or password field undefined or empty');
@@ -77,7 +83,6 @@ router.post("/login", function(req, res, next){
 	        });
 	}
 	else{
-		console.log("user or pass empty");
 		res.sendStatus("401");
 	}
 });
@@ -99,7 +104,6 @@ function getAuthMacaroons(userId, pass, db){
 					resolve(authMacaroons);
 				}
 				else{
-					//res.sendStatus("401");
 					var error = new Error("Authentication failed");
 					reject(error);
 				}
@@ -109,6 +113,7 @@ function getAuthMacaroons(userId, pass, db){
   			}).catch(function (error) {
                 console.log("Promise rejected:");
                 console.log(error);
+                reject(error);
         	});
 	});
 };
@@ -121,45 +126,36 @@ router.get("/logout", function(req, res, next){
 });
 */
 
+function registerNewUser(userId, pass, db){
+	return new Promise((resolve, reject) => {
+		var kdfResult 	= scrypt.kdfSync(pass, scryptParameters);
+		pass 			= kdfResult.toString("hex");
+		var userPolicy 	= getUserPolicy(userId)
 
-function registerNewUser(userId, pass, db, res){
+	 	var collection = db.collection('ACEs');
 
-	var kdfResult = scrypt.kdfSync(pass, scryptParameters);
-	pass = kdfResult.toString("hex");
-	var userPolicy = getUserPolicy(userId)
-	console.log("inserting user: " + userId);
-	inserUser(db, userId, pass, userPolicy, res);
-};
-
-function inserUser(db, userId, pass, userPolicy, res) {
-  	try{
-  		// Get the ACEs collection
- 		var collection = db.collection('ACEs');
-
-  		collection.find({userId : userId}).count()
-  			.then(function(count){
-  				if(count > 0){
-  					res.status(403).send("Forbidden: Can\'t add user");
-  				}
-  				else{
+	  	collection.find({userId : userId}).count()
+	  		.then(function(count){
+	  			if(count > 0){
+	  				//res.status(403).send("Forbidden: Can\'t add user");
+	  				var error = new Error("Can\'t add existing user");
+	  				reject(error);
+	  			}
+	  			else{
 		  			var secretKey = crypto.randomBytes(32).toString('hex');
 			  		collection.insertOne({userId: userId, pass: pass, userPolicy: userPolicy, secretKey : secretKey, identifier : uuidv4()});	
-			    	console.log("Registered a new user: " + userId);
-			    	res.status(200).send("OK: User registered");
+			    	resolve();
 		  		}
-  			}, function(error){
-  				console.log(error);
-  				res.sendStatus("401");
-  			}).catch(function (error) {
-                console.log("Promise rejected:");
-                console.log(error);
-            });	
-  	}
-  	catch(err){
-  		console.log(err)
-  		res.sendStatus("401");
-  	}
-  	
+	  		}, function(error){
+	  			console.log(error);
+	  			reject(error);
+	  		}).catch(function (error) {
+	            console.log("Promise rejected:");
+	            console.log(error);
+	            reject(error);
+	        });	
+	});
+	
 };
 
 
