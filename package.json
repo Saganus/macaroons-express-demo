@@ -6,11 +6,11 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "body-parser": "~1.16.0",
+    "body-parser": "~1.17.1",
     "cookie-parser": "^1.4.3",
     "debug": "~2.6.0",
     "ejs": "~2.5.5",
-    "express": "~4.14.1",
+    "express": "~4.15.2",
     "express-mongo-db": "^2.0.3",
     "lodash": "^4.17.4",
     "macaroons.js": "^0.3.8",
