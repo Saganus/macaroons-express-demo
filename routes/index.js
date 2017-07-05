@@ -35,8 +35,6 @@ router.get("/login", function(req, res, next){
 	res.render("login_form", {});
 });
 
-
-
 router.post("/register", function(req, res, next){
 
 	var user = req.body.user;
@@ -106,22 +104,30 @@ function registerNewUser(userId, pass, db, res){
 
 function inserUser(db, userId, pass, userPolicy, res) {
   	// Get the ACEs collection
- 	var collection = db.collection('ACEs');
   	// Insert  user
-  	collection.find({userId : userId}).count(function(err, result){
-  		if(result > 0){
+  	try{
+  		var collection = db.collection('ACEs');
+  		var userExists = collection.find({userId : userId}).count();
+  		console.log("User exists count: " + userExists);
+
+  		if(userExists > 0){
   			res.status(403).send("Forbidden: Can\'t add user");
   		}
   		else{
   			//var secretKey = crypto.randomBytes(32).toString('hex');
-	  		collection.insertOne({userId:userId, pass: pass, userPolicy: userPolicy}, function(err, result) {
-	    		console.log("Registered a new user");
-	    		res.status(200).send("OK: User registered");
-	  		});	
+	  		yield collection.insertOne({userId:userId, pass: pass, userPolicy: userPolicy});	
+	    	console.log("Registered a new user");
+	    	res.status(200).send("OK: User registered");
   		}
-  	});
+
+  	}
+  	catch(err){
+  		console.log(err);
+  		res.sendStatus("401");
+  	}
   	
 };
+
 
 function getUserPolicy(userId){
 	var userPolicy = {
