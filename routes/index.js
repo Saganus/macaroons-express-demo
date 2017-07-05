@@ -16,6 +16,7 @@ var MacaroonAuthUtils	= require("../utils/macaroon_auth.js");
 var location 	= "http://www.endofgreatness.net";
 //var secretKey = crypto.randomBytes(32);
 var secretKey 			= "3ec8441288c7220bbc5f9b8d144897b28615c4557e0ce5b179408bdd8c7c5779";
+var serverSecretKey     = "af0c846e40abbc90cb8f270ea014e9a89ebf1b64d97403b656c6dfc8eeb47ed0";
 var thirdPartySecret 	= "third-party secret";
 var identifier 			= "random32";
 
