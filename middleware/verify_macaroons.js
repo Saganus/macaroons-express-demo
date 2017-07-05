@@ -4,21 +4,19 @@ var MacaroonsVerifier       = require("macaroons.js").MacaroonsVerifier;
 var TimestampCaveatVerifier = require('macaroons.js').verifier.TimestampCaveatVerifier;
 const crypto                = require("crypto");
 
-var serverSecretKey     = "af0c846e40abbc90cb8f270ea014e9a89ebf1b64d97403b656c6dfc8eeb47ed0";
-var secretKey           = "3ec8441288c7220bbc5f9b8d144897b28615c4557e0ce5b179408bdd8c7c5779";
-var caveatKey           = "secret2";
-var caveatId            = "random2-32"
+var serverSecretKey     = process.env.SECRET_KEY;
 var location            = "http://www.endofgreatness.net";
-
 var routesCaveatRegex   = /routes=(.*)/;
+
+//var caveatKey           = "secret2";
+//var caveatId            = "random2-32"
 
 module.exports = function(options) {
     return function verifyMacaroons(req, res, next) {
         var serverId    = options.serverId;
-        var userId      = req.cookies[serverId + "/userId"];
         var serializedMacaroon = req.cookies[serverId + "/" + req.method];
 
-        validateRequest(serverId, userId, serializedMacaroon, req.method, req.path, req.db)
+        validateRequest(serverId, serializedMacaroon, req.method, req.path, req.db)
             .then(function(isValid){
                 if(isValid){
                     next();
@@ -29,18 +27,23 @@ module.exports = function(options) {
             }, function(err){
                 console.log(err);
                 res.sendStatus("401");
+            }).catch(function (error) {
+                console.log("Promise rejected:");
+                console.log(error);
             });
-        };
+    };
 };
 
-function validateRequest(serverId, userId, serializedMacaroon, method, path, db){
+function validateRequest(serverId, serializedMacaroon, method, path, db){
     return new Promise((resolve, reject) => {
         if(typeof serializedMacaroon != "undefined"){
+            macaroon = MacaroonsBuilder.deserialize(serializedMacaroon);
+
             var collection = db.collection('ACEs');
-            collection.findOne({userId : userId})
+            collection.findOne({identifier : macaroon.identifier})
                 .then(function(user){
                     console.log("user found for request validation: " + user);
-                    macaroon = MacaroonsBuilder.deserialize(serializedMacaroon);
+                    
                     console.log(method + " Macaroon:");
                     console.log(macaroon.inspect());
                     var verifier = new MacaroonsVerifier(macaroon);
@@ -62,7 +65,11 @@ function validateRequest(serverId, userId, serializedMacaroon, method, path, db)
                             return false;
                         }
                     });
- 
+                    const hash = crypto.createHash('sha256');
+                    hash.update(serverSecretKey + user.secretKey);
+                    var secretKeyHash = hash.digest("hex");
+                    var secretKey = Buffer.from(secretKeyHash, "hex");
+
                     if(verifier.isValid(secretKey)){
                         console.log("Provided Macaroon is valid");
                         return resolve(true);
@@ -72,6 +79,9 @@ function validateRequest(serverId, userId, serializedMacaroon, method, path, db)
                         console.log(macaroon.inspect());
                         return resolve(false);
                     }
+                }).catch(function (error) {
+                    console.log("Promise rejected:");
+                    console.log(error);
                 });
         }
         else{
@@ -81,35 +91,6 @@ function validateRequest(serverId, userId, serializedMacaroon, method, path, db)
         }
     });  
 };
-/*
-function getPolicy(userId){
-    var userPolicy = {
-        name : "memberAccess",
-        description: "Access policy for members of the site",
-        serverId : "restricted123",
-        expires : 60*60*24,
-        scopes : [
-            {
-                name : "public",
-                routes : ["/", "/login"],
-                methods : ["GET"]
-            },
-            {
-                name : "resetPassword",
-                routes : ["/resetPassword"],
-                methods : ["POST"]
-            },
-            {
-                name : "restricted",
-                routes : ["/restricted"],
-                methods : ["GET", "POST"]
-            }
-        ]
-    }
-
-    return userPolicy
-};
-/*
 
 /*
 function isValidGetRequest(serverId, getMacaroon, path){

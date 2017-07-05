@@ -3,8 +3,8 @@ var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
 
 var _ = require('lodash');
 
-var caveatKey 			= "secret2";
-var caveatId 			= "random2-32"
+//var caveatKey 			= "secret2";
+//var caveatId 			= "random2-32"
 // in minutes from now
 var defaultExpiration 	= 5; 
 
