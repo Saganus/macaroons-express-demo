@@ -15,8 +15,8 @@
     "lodash": "^4.17.4",
     "macaroons.js": "^0.3.8",
     "mongodb": "^2.2.29",
-    "morgan": "~1.7.0",
+    "morgan": "~1.8.2",
     "scrypt": "^6.0.3",
-    "serve-favicon": "~2.3.2"
+    "serve-favicon": "~2.4.3"
   }
 }
