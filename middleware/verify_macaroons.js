@@ -4,9 +4,9 @@ var MacaroonsVerifier       = require("macaroons.js").MacaroonsVerifier;
 var TimestampCaveatVerifier = require('macaroons.js').verifier.TimestampCaveatVerifier;
 const crypto                = require("crypto");
 
-var serverSecretKey     = process.env.SECRET_KEY;
-var location            = "http://www.endofgreatness.net";
-var routesCaveatRegex   = /routes=(.*)/;
+var macaroonServerSecret    = process.env.MACAROON_SERVER_SECRET;
+var location                = "http://www.endofgreatness.net";
+var routesCaveatRegex       = /routes=(.*)/;
 
 //var caveatKey           = "secret2";
 //var caveatId            = "random2-32"
@@ -72,11 +72,11 @@ function validateRequest(publicScope, serverId, serializedMacaroon, method, path
                     });
 
                     const hash = crypto.createHash('sha256');
-                    hash.update(serverSecretKey + user.secretKey);
-                    var secretKeyHash = hash.digest("hex");
-                    var secretKey = Buffer.from(secretKeyHash, "hex");
+                    hash.update(macaroonServerSecret + user.macaroonSecret);
+                    var macaroonSecretHash = hash.digest("hex");
+                    var macaroonSecret = Buffer.from(macaroonSecretHash, "hex");
 
-                    if(verifier.isValid(secretKey)){
+                    if(verifier.isValid(macaroonSecret)){
                         return resolve(true);
                     }
                     else{
@@ -131,7 +131,7 @@ function isValidGetRequest(serverId, getMacaroon, path){
 
         //verifier.satisfy3rdParty(dp);
 
-        if(verifier.isValid(secretKey)){
+        if(verifier.isValid(macaroonSecret)){
             console.log("Provided Macaroon is valid");
             return true;
         }

@@ -35,10 +35,10 @@ function getScopeRoutes(scopes, method){
 	});
 };
 
-function generateMacaroons(userPolicy, location, secretKey, identifier){
+function generateMacaroons(userPolicy, location, macaroonSecret, identifier){
 	var macaroonScopes = getMacaroonScopes(userPolicy);
 
-	var serverMacaroon 	= MacaroonsBuilder.create(location, secretKey, identifier);
+	var serverMacaroon 	= MacaroonsBuilder.create(location, macaroonSecret, identifier);
 	serverMacaroon 		= MacaroonsBuilder.modify(serverMacaroon).add_first_party_caveat("server-id="+userPolicy.serverId).getMacaroon();
 
 	var authMacaroons = {};

@@ -15,10 +15,10 @@ var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
 var MacaroonAuthUtils	= require("../utils/macaroon_auth.js");
 var macaroonsAuth 		= require("../middleware/verify_macaroons");
 
-var serverSecretKey     = process.env.SECRET_KEY;
-var serverId 			= process.env.SERVER_ID;
-var location 			= "http://www.endofgreatness.net";
-//var secretKey 			= "3ec8441288c7220bbc5f9b8d144897b28615c4557e0ce5b179408bdd8c7c5779";
+var macaroonServerSecret	= process.env.MACAROON_SERVER_SECRET;
+var serverId 				= process.env.SERVER_ID;
+var location 				= "http://www.endofgreatness.net";
+//var macaroonSecret 			= "3ec8441288c7220bbc5f9b8d144897b28615c4557e0ce5b179408bdd8c7c5779";
 
 //var thirdPartySecret 	= "third-party secret";
 //var identifier 			= "random32";
@@ -93,8 +93,8 @@ router.post("/logout/:userId", function(req, res, next){
 	console.log("logging out user: " + userId);
 	if (typeof userId !== "undefined" && userId !== ""){
 		var collection = req.db.collection('ACEs');
-		var secretKey = crypto.randomBytes(32).toString('hex');
-		collection.updateOne({userId: userId}, {$set: {secretKey: secretKey}})
+		var macaroonSecret = crypto.randomBytes(32).toString('hex');
+		collection.updateOne({userId: userId}, {$set: {macaroonSecret: macaroonSecret}})
 			.then(function(updateResult){
 				if(updateResult.result["ok"] == 1){
 					//console.log(result);
@@ -128,10 +128,10 @@ function getAuthMacaroons(userId, pass, db){
 						var userPolicy = getUserPolicy(user.userId);
 
 						const hash 			= crypto.createHash('sha256');
-						hash.update(serverSecretKey + user.secretKey);
-						var secretKey 		= Buffer.from(hash.digest("hex"), "hex");
+						hash.update(macaroonServerSecret + user.macaroonSecret);
+						var macaroonSecret 		= Buffer.from(hash.digest("hex"), "hex");
 
-						authMacaroons 		= MacaroonAuthUtils.generateMacaroons(userPolicy, location, secretKey, user.identifier);
+						authMacaroons 		= MacaroonAuthUtils.generateMacaroons(userPolicy, location, macaroonSecret, user.identifier);
 						resolve(authMacaroons);
 					}
 					else{
@@ -168,8 +168,8 @@ function registerNewUser(userId, pass, db){
 	  				reject(error);
 	  			}
 	  			else{
-		  			var secretKey = crypto.randomBytes(32).toString('hex');
-			  		collection.insertOne({userId: userId, pass: pass, userPolicy: userPolicy, secretKey : secretKey, identifier : uuidv4()});	
+		  			var macaroonSecret = crypto.randomBytes(32).toString('hex');
+			  		collection.insertOne({userId: userId, pass: pass, userPolicy: userPolicy, macaroonSecret : macaroonSecret, identifier : uuidv4()});	
 			    	resolve();
 		  		}
 	  		}).catch(function (error) {
