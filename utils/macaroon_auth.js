@@ -9,6 +9,24 @@ var _ = require('lodash');
 // in minutes from now
 var defaultExpiration 	= 5; 
 
+function generateMacaroons(userPolicy, location, macaroonSecret, identifier){
+	var macaroonScopes 	= getMacaroonScopes(userPolicy);
+
+	var serverMacaroon 	= MacaroonsBuilder.create(location, macaroonSecret, identifier);
+	serverMacaroon 		= MacaroonsBuilder.modify(serverMacaroon).add_first_party_caveat("server-id="+userPolicy.serverId).getMacaroon();
+
+	var authMacaroons 	= {};
+
+	Object.keys(macaroonScopes).forEach(function(key, index){
+		if (macaroonScopes[key].length > 0){
+			authMacaroons[key] = generateRestrictedMacaroon(serverMacaroon, key, macaroonScopes[key], location);
+		}
+
+	});
+
+	return authMacaroons;
+};
+
 function getMacaroonScopes(userPolicy){
 
 	var getScopes 		= getScopeRoutes(userPolicy.scopes, "GET");
@@ -35,23 +53,6 @@ function getScopeRoutes(scopes, method){
 	});
 };
 
-function generateMacaroons(userPolicy, location, macaroonSecret, identifier){
-	var macaroonScopes = getMacaroonScopes(userPolicy);
-
-	var serverMacaroon 	= MacaroonsBuilder.create(location, macaroonSecret, identifier);
-	serverMacaroon 		= MacaroonsBuilder.modify(serverMacaroon).add_first_party_caveat("server-id="+userPolicy.serverId).getMacaroon();
-
-	var authMacaroons = {};
-
-	Object.keys(macaroonScopes).forEach(function(key, index){
-		if (macaroonScopes[key].length > 0){
-			authMacaroons[key] = generateRestrictedMacaroon(serverMacaroon, key, macaroonScopes[key], location);
-		}
-
-	});
-
-	return authMacaroons;
-};
 
 function generateRestrictedMacaroon(serverMacaroon, method, scopes, location){
 	restrictedMacaroon = addMethodToMacaroon(serverMacaroon, method);
