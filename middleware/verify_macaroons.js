@@ -13,10 +13,11 @@ var routesCaveatRegex   = /routes=(.*)/;
 
 module.exports = function(options) {
     return function verifyMacaroons(req, res, next) {
-        var serverId    = options.serverId;
-        var serializedMacaroon = req.cookies[serverId + "/" + req.method];
+        var serverId            = options.serverId;
+        var publicScope         = options.publicScope;
+        var serializedMacaroon  = req.cookies[serverId + "/" + req.method];
 
-        validateRequest(serverId, serializedMacaroon, req.method, req.path, req.db)
+        validateRequest(publicScope, serverId, serializedMacaroon, req.method, req.path, req.db)
             .then(function(isValid){
                 if(isValid){
                     next();
@@ -24,9 +25,6 @@ module.exports = function(options) {
                 else{
                     res.sendStatus("401");
                 }
-            }, function(err){
-                console.log(err);
-                res.sendStatus("401");
             }).catch(function (error) {
                 console.log("Promise rejected:");
                 console.log(error);
@@ -34,32 +32,45 @@ module.exports = function(options) {
     };
 };
 
-function validateRequest(serverId, serializedMacaroon, method, path, db){
+function validateRequest(publicScope, serverId, serializedMacaroon, method, path, db){
     return new Promise((resolve, reject) => {
-        if(typeof serializedMacaroon != "undefined"){
+        if(typeof publicScope !== "undefined" && typeof publicScope[method] !== "undefined" && publicScope[method].indexOf(path) > -1){
+            return resolve(true);
+        }
+        else if(typeof serializedMacaroon !== "undefined"){
             macaroon = MacaroonsBuilder.deserialize(serializedMacaroon);
 
             var collection = db.collection('ACEs');
             collection.findOne({identifier : macaroon.identifier})
                 .then(function(user){
                     var verifier = new MacaroonsVerifier(macaroon);
+
                     verifier.satisfyExact("server-id="+serverId);
                     verifier.satisfyExact("method="+method);
                     verifier.satisfyExact("route="+path);
+
                     verifier.satisfyGeneral(TimestampCaveatVerifier);
                     verifier.satisfyGeneral(function RouteCaveatVerifier(caveat) {
                         var match = routesCaveatRegex.exec(caveat);
                         if (match !== null) {
                             var parsedRoutes = match[1].split(",");
-
+                            
                             if(parsedRoutes.indexOf(path) > -1){
                                 return true;
+                            }
+                            else{
+                                console.log("parsedRoutes, path: ");
+                                console.log(parsedRoutes);
+                                console.log(path);
+
+                                return false;
                             }
                         }
                         else{
                             return false;
                         }
                     });
+
                     const hash = crypto.createHash('sha256');
                     hash.update(serverSecretKey + user.secretKey);
                     var secretKeyHash = hash.digest("hex");
@@ -79,7 +90,6 @@ function validateRequest(serverId, serializedMacaroon, method, path, db){
                 });
         }
         else{
-            console.log("No Macaroon provided for this request type");
             var error = new Error("No Macaroon provided for this request type");
             return reject(error);
         }
