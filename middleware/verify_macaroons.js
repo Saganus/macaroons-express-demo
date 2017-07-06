@@ -59,10 +59,6 @@ function validateRequest(publicScope, serverId, serializedMacaroon, method, path
                                 return true;
                             }
                             else{
-                                console.log("parsedRoutes, path: ");
-                                console.log(parsedRoutes);
-                                console.log(path);
-
                                 return false;
                             }
                         }
