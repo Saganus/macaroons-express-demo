@@ -124,7 +124,7 @@ function getAuthMacaroons(userId, pass, db){
                     if(isAuthenticated){
                         var userPolicy      = getUserPolicy(user.userId);
                         var macaroonSecret  = MacaroonAuthUtils.calculateMacaroonSecret(user.macaroonSecret);
-                        authMacaroons       = MacaroonAuthUtils.generateMacaroons(userPolicy, location, macaroonSecret, user.identifier);
+                        authMacaroons       = MacaroonAuthUtils.mintMacaroons(userPolicy, location, macaroonSecret, user.identifier);
                         resolve(authMacaroons);
                     }
                     else{

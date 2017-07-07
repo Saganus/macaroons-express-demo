@@ -12,7 +12,7 @@ var _ = require('lodash');
 // in minutes from now
 var defaultExpiration   = 5; 
 
-function generateMacaroons(userPolicy, location, macaroonSecret, identifier){
+function mintMacaroons(userPolicy, location, macaroonSecret, identifier){
     var macaroonScopes  = getMacaroonScopes(userPolicy);
 
     var serverMacaroon  = MacaroonsBuilder.create(location, macaroonSecret, identifier);
@@ -22,7 +22,7 @@ function generateMacaroons(userPolicy, location, macaroonSecret, identifier){
 
     Object.keys(macaroonScopes).forEach(function(key, index){
         if (macaroonScopes[key].length > 0){
-            authMacaroons[key] = generateRestrictedMacaroon(serverMacaroon, key, macaroonScopes[key], location);
+            authMacaroons[key] = mintRestrictedMacaroon(serverMacaroon, key, macaroonScopes[key], location);
         }
 
     });
@@ -57,7 +57,7 @@ function getScopeRoutes(scopes, method){
 };
 
 
-function generateRestrictedMacaroon(serverMacaroon, method, scopes, location){
+function mintRestrictedMacaroon(serverMacaroon, method, scopes, location){
     restrictedMacaroon = addMethodToMacaroon(serverMacaroon, method);
     restrictedMacaroon = addScopesToMacaroon(restrictedMacaroon, scopes);
     restrictedMacaroon = addTimeExpirationToMacaroon(restrictedMacaroon, defaultExpiration);
