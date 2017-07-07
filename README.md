@@ -31,9 +31,15 @@ In contrast, in a traditional cookie-based system it's an all-or-nothing approac
 
 With the *mAuth* system, if for example the most commonly used Macaroon is the GET Macaroon and it happens to be stolen by a MITM, the attacker won't be able to do anything else other than GET requests while the Macaroon is valid, and only to those restricted routes specified in the user policy.
 
+## How to use the mAuth middleware?
 
-
-
+   * Clone the repo: `git clone https://github.com/Saganus/macaroons-express-demo.git`
+   
+   * Set the env vars MACAROON_SERVER_SECRET (ideally 32 random bytes e.g. `crypto.randomBytes(32).toString('hex');`) and SERVER_ID (Whatever you like to use to identify your server) and then start it, e.g.:
+   
+   `MACAROON_SERVER_SECRET=af0c846e40abbc90cb8f270ea014e9a89ebf1b64d97403b656c6dfc8eeb47ed0 SERVER_ID=restricted123 npm start`
+   
+  
 
    
    
