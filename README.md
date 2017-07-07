@@ -34,6 +34,35 @@ Each access Macaroon consists of [the following first-party caveats](https://git
 
 All these caveats must hold at the time of the request for it to be valid and thus allowed to be processed. This provides intersesting functionality, like the ability to invalidate *all* Macaroons by just changing the serverId. Also, due to having a Macaroon for each method we can better define user policies and isolate dangerous functionality (DELETE, PUT) and make it harder for an attacker to cause damage in case Macaroons are stolen. 
 
+## How do you grant or deny user access to a resource?
+
+By providing a user policy when the Macaroons are mint, you can define which routes are accesible via which methods and the mint will use this structure to create the corresponding Macaroons.
+
+For example, a user policy looks like this:
+
+    {
+        name : "memberAccess",
+        description: "Access policy for members of the site",
+        serverId : serverId,
+        expires : 60*60*24,
+        scopes : [
+            {
+                name : "restricted",
+                routes : ["/restricted"],
+                methods : ["GET", "POST"]
+            },
+            {
+                name : "logout user",
+                routes : ["/logout"],
+                methods : ["POST"]
+            }
+        ]
+    }
+
+A user with this policy will only be able to do `GET /restricted` or `POST /restricted` requests to the API, or `POST /logout` (which should be standard for all users, but not public).
+
+On the other hand it's possible (but not required) to [provide a public scope to the verifier](https://github.com/Saganus/macaroons-express-demo/blob/master/routes/index.js#L28-L34), so that users that have not yet logged in can access the public resources without any Macaroons, i.e. any routes in the public scopes object will be allowed access with or without the corresponding Macaroon present.
+
 ## Advantages
 
 The idea is to provide a very simple to use middleware with per-instance and per-verb granularity in the access rules, while at the same time providing enhanced protection compared to a cookie-based approach. Since the access Macaroons are cryptographycally signed and include the context in which they are valid, it's much harder to do unauthorized actions in case of Macaroon theft. 
