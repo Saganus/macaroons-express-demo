@@ -9,8 +9,8 @@ var router = express.Router();
 //router.use(macaroonsAuth({serverId : serverId}));
 
 router.get("/", function(req, res, next){
-	//res.send("Succesfully accessed a restricted area");
-	res.render("logout_form", {});
+    //res.send("Succesfully accessed a restricted area");
+    res.render("logout_form", {});
 });
 
 module.exports = router;

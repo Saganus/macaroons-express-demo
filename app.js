@@ -1,14 +1,14 @@
-var express 		= require("express");
-var path 			= require("path");
-var favicon 		= require("serve-favicon");
-var logger 			= require("morgan");
-var cookieParser 	= require("cookie-parser");
-var bodyParser 		= require("body-parser");
-var expressMongoDb 	= require('express-mongo-db');
+var express         = require("express");
+var path            = require("path");
+var favicon         = require("serve-favicon");
+var logger          = require("morgan");
+var cookieParser    = require("cookie-parser");
+var bodyParser      = require("body-parser");
+var expressMongoDb  = require('express-mongo-db');
 
-var index 		= require("./routes/index");
-var users 		= require("./routes/users");
-var restricted 	= require("./routes/restricted")
+var index       = require("./routes/index");
+var users       = require("./routes/users");
+var restricted  = require("./routes/restricted")
 
 var app = express();
 

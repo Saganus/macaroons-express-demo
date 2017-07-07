@@ -1,211 +1,211 @@
-var express 	= require("express");
-var router 		= express.Router();
+var express     = require("express");
+var router      = express.Router();
 var MongoClient = require('mongodb').MongoClient;
-var cookie 		= require("cookie");
+var cookie      = require("cookie");
 
-const crypto 	= require("crypto");
-const uuidv4 	= require('uuid/v4');
+const crypto    = require("crypto");
+const uuidv4    = require('uuid/v4');
 
-var scrypt 				= require("scrypt");
-var scryptParameters 	= scrypt.paramsSync(0.1);
+var scrypt              = require("scrypt");
+var scryptParameters    = scrypt.paramsSync(0.1);
 
-var MacaroonsBuilder 	= require("macaroons.js").MacaroonsBuilder;
-var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
+var MacaroonsBuilder    = require("macaroons.js").MacaroonsBuilder;
+var MacaroonsVerifier   = require("macaroons.js").MacaroonsVerifier;
 
-var MacaroonAuthUtils	= require("../utils/macaroon_auth.js");
-var macaroonsAuth 		= require("../middleware/verify_macaroons");
-var getMacaroonSecret	= require("../middleware/get_macaroon_user_secret");
+var MacaroonAuthUtils   = require("../utils/macaroon_auth.js");
+var macaroonsAuth       = require("../middleware/verify_macaroons");
+var getMacaroonSecret   = require("../middleware/get_macaroon_user_secret");
 
-var macaroonServerSecret	= process.env.MACAROON_SERVER_SECRET;
-var serverId 				= process.env.SERVER_ID;
-var location 				= "http://www.endofgreatness.net";
-//var macaroonSecret 			= "3ec8441288c7220bbc5f9b8d144897b28615c4557e0ce5b179408bdd8c7c5779";
+var macaroonServerSecret    = process.env.MACAROON_SERVER_SECRET;
+var serverId                = process.env.SERVER_ID;
+var location                = "http://www.endofgreatness.net";
+//var macaroonSecret            = "3ec8441288c7220bbc5f9b8d144897b28615c4557e0ce5b179408bdd8c7c5779";
 
-//var thirdPartySecret 	= "third-party secret";
-//var identifier 			= "random32";
+//var thirdPartySecret  = "third-party secret";
+//var identifier            = "random32";
 
-var defaultCookieAge 	= 1 * 60 * 60 * 1000;
+var defaultCookieAge    = 1 * 60 * 60 * 1000;
 
 var publicScope = {
-	GET : ["/", "/login"],
-	POST : ["/login", "/register", "/resetPassword"]
-}
+    GET : ["/", "/login"],
+    POST : ["/login", "/register", "/resetPassword"]
+};
 
 router.use(getMacaroonSecret({collection: "ACEs"}));
 router.use(macaroonsAuth({serverId : serverId, publicScope : publicScope}));
 
 router.get("/", function(req, res, next) {
- 	res.render("index", { title: "Express" });
+    res.render("index", { title: "Express" });
 });
 
 router.get("/login", function(req, res, next){
-	res.render("login_form", {});
+    res.render("login_form", {});
 });
 
 router.post("/register", function(req, res, next){
 
-	var user = req.body.user;
-	var pass = req.body.pass;
+    var user = req.body.user;
+    var pass = req.body.pass;
 
-	if (typeof user !== 'undefined' && user !== '' 
-		&& typeof pass !== 'undefined' && pass !== '' ){
-		registerNewUser(user, pass, req.db)
-			.then(function(){
-				res.send("User " + user + " successfully registered");
-			}).catch(function(error){
-				console.log(error);
-				res.sendStatus("401");
-			});
-	}
-	else{
-		res.status(400).send('Bad Request: User or password field undefined or empty');
-	}
+    if (typeof user !== 'undefined' && user !== '' 
+        && typeof pass !== 'undefined' && pass !== '' ){
+        registerNewUser(user, pass, req.db)
+            .then(function(){
+                res.send("User " + user + " successfully registered");
+            }).catch(function(error){
+                console.log(error);
+                res.sendStatus("401");
+            });
+    }
+    else{
+        res.status(400).send('Bad Request: User or password field undefined or empty');
+    }
 
 });
 
 router.post("/login", function(req, res, next){
 
-	var user = req.body.user;
-	var pass = req.body.pass;
+    var user = req.body.user;
+    var pass = req.body.pass;
 
-	if (typeof user !== "undefined" && user !== ""
-		&& typeof pass !== "undefined" && pass !== "" ){
-		getAuthMacaroons(user, pass, req.db)
-			.then(function(authMacaroons){
+    if (typeof user !== "undefined" && user !== ""
+        && typeof pass !== "undefined" && pass !== "" ){
+        getAuthMacaroons(user, pass, req.db)
+            .then(function(authMacaroons){
 
 
-				res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
-				res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
-				res.cookie(serverId+"/PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
-				res.cookie(serverId+"/DELETE", authMacaroons["DELETE"], { maxAge: defaultCookieAge, httpOnly: true });
+                res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
+                res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
+                res.cookie(serverId+"/PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
+                res.cookie(serverId+"/DELETE", authMacaroons["DELETE"], { maxAge: defaultCookieAge, httpOnly: true });
 
-				res.send("Successfully logged in");
-			}).catch(function (error) {
-	            console.log("post(/login): getAuthMacaroons promise rejected:");
-	            console.log(error);
-	            res.sendStatus("401");
-	        });
-	}
-	else{
-		res.sendStatus("401");
-	}
+                res.send("Successfully logged in");
+            }).catch(function (error) {
+                console.log("post(/login): getAuthMacaroons promise rejected:");
+                console.log(error);
+                res.sendStatus("401");
+            });
+    }
+    else{
+        res.sendStatus("401");
+    }
 });
 
 router.post("/logout", function(req, res, next){
-	var userId = req.body.userId;
-	console.log("logging out user: " + userId);
-	if (typeof userId !== "undefined" && userId !== ""){
-		var collection = req.db.collection('ACEs');
-		var macaroonSecret = crypto.randomBytes(32).toString('hex');
-		collection.updateOne({userId: userId}, {$set: {macaroonSecret: macaroonSecret}})
-			.then(function(updateResult){
-				if(updateResult.result["ok"] == 1){
-					//console.log(result);
-					res.send("Logged out successfully");
-				}
-				else{
-					console.log("User not found: " + userId);
-					res.sendStatus("401");
-				}
-		}).catch(function (error) {
-	        console.log("get(/logout): collection.updateOne Promise rejected:");
-	        console.log(error);
-	        res.sendStatus("401");
-	    });
-	}
-	else{
-		res.sendStatus("401");
-	}
+    var userId = req.body.userId;
+    console.log("logging out user: " + userId);
+    if (typeof userId !== "undefined" && userId !== ""){
+        var collection = req.db.collection('ACEs');
+        var macaroonSecret = crypto.randomBytes(32).toString('hex');
+        collection.updateOne({userId: userId}, {$set: {macaroonSecret: macaroonSecret}})
+            .then(function(updateResult){
+                if(updateResult.result["ok"] == 1){
+                    //console.log(result);
+                    res.send("Logged out successfully");
+                }
+                else{
+                    console.log("User not found: " + userId);
+                    res.sendStatus("401");
+                }
+        }).catch(function (error) {
+            console.log("get(/logout): collection.updateOne Promise rejected:");
+            console.log(error);
+            res.sendStatus("401");
+        });
+    }
+    else{
+        res.sendStatus("401");
+    }
 
-	
+    
 });
 
 function getAuthMacaroons(userId, pass, db){
-	return new Promise((resolve, reject) =>{
-		var collection = db.collection('ACEs');
-		collection.findOne({userId : userId})
-			.then(function(user){
-				if(user !== null){
-					var isAuthenticated = scrypt.verifyKdfSync(Buffer.from(user.pass, "hex"), pass);
-					if(isAuthenticated){
-						var userPolicy = getUserPolicy(user.userId);
+    return new Promise((resolve, reject) =>{
+        var collection = db.collection('ACEs');
+        collection.findOne({userId : userId})
+            .then(function(user){
+                if(user !== null){
+                    var isAuthenticated = scrypt.verifyKdfSync(Buffer.from(user.pass, "hex"), pass);
+                    if(isAuthenticated){
+                        var userPolicy = getUserPolicy(user.userId);
 
-						const hash 			= crypto.createHash('sha256');
-						hash.update(macaroonServerSecret + user.macaroonSecret);
-						var macaroonSecret 	= Buffer.from(hash.digest("hex"), "hex");
+                        const hash          = crypto.createHash('sha256');
+                        hash.update(macaroonServerSecret + user.macaroonSecret);
+                        var macaroonSecret  = Buffer.from(hash.digest("hex"), "hex");
 
-						authMacaroons 		= MacaroonAuthUtils.generateMacaroons(userPolicy, location, macaroonSecret, user.identifier);
-						resolve(authMacaroons);
-					}
-					else{
-						var error = new Error("Authentication failed");
-						reject(error);
-					}
-				}
-				else{
-					var error = new Error("User not found: " + userId);
-					reject(error);
-				}
-			}).catch(function (error) {
+                        authMacaroons       = MacaroonAuthUtils.generateMacaroons(userPolicy, location, macaroonSecret, user.identifier);
+                        resolve(authMacaroons);
+                    }
+                    else{
+                        var error = new Error("Authentication failed");
+                        reject(error);
+                    }
+                }
+                else{
+                    var error = new Error("User not found: " + userId);
+                    reject(error);
+                }
+            }).catch(function (error) {
                 console.log("getAuthMacaroons: collection.findOne Promise rejected:");
                 console.log(error);
                 reject(error);
-        	});
-	});
+            });
+    });
 };
 
 
 function registerNewUser(userId, pass, db){
-	return new Promise((resolve, reject) => {
-		var kdfResult 	= scrypt.kdfSync(pass, scryptParameters);
-		pass 			= kdfResult.toString("hex");
-		var userPolicy 	= getUserPolicy(userId)
+    return new Promise((resolve, reject) => {
+        var kdfResult   = scrypt.kdfSync(pass, scryptParameters);
+        pass            = kdfResult.toString("hex");
+        var userPolicy  = getUserPolicy(userId)
 
-	 	var collection = db.collection('ACEs');
+        var collection = db.collection('ACEs');
 
-	  	collection.find({userId : userId}).count()
-	  		.then(function(count){
-	  			if(count > 0){
-	  				//res.status(403).send("Forbidden: Can\'t add user");
-	  				var error = new Error("Can\'t add existing user");
-	  				reject(error);
-	  			}
-	  			else{
-		  			var macaroonSecret = crypto.randomBytes(32).toString('hex');
-			  		collection.insertOne({userId: userId, pass: pass, userPolicy: userPolicy, macaroonSecret : macaroonSecret, identifier : uuidv4()});	
-			    	resolve();
-		  		}
-	  		}).catch(function (error) {
-	            console.log("Promise rejected:");
-	            console.log(error);
-	            reject(error);
-	        });	
-	});
-	
+        collection.find({userId : userId}).count()
+            .then(function(count){
+                if(count > 0){
+                    //res.status(403).send("Forbidden: Can\'t add user");
+                    var error = new Error("Can\'t add existing user");
+                    reject(error);
+                }
+                else{
+                    var macaroonSecret = crypto.randomBytes(32).toString('hex');
+                    collection.insertOne({userId: userId, pass: pass, userPolicy: userPolicy, macaroonSecret : macaroonSecret, identifier : uuidv4()}); 
+                    resolve();
+                }
+            }).catch(function (error) {
+                console.log("Promise rejected:");
+                console.log(error);
+                reject(error);
+            }); 
+    });
+    
 };
 
 
 function getUserPolicy(userId){
-	var userPolicy = {
-		name : "memberAccess",
-		description: "Access policy for members of the site",
-		serverId : serverId,
-		expires : 60*60*24,
-		scopes : [
-			{
-				name : "restricted",
-				routes : ["/restricted"],
-				methods : ["GET", "POST"]
-			},
-			{
-				name : "logout user",
-				routes : ["/logout"],
-				methods : ["POST"]
-			}
-		]
-	}
+    var userPolicy = {
+        name : "memberAccess",
+        description: "Access policy for members of the site",
+        serverId : serverId,
+        expires : 60*60*24,
+        scopes : [
+            {
+                name : "restricted",
+                routes : ["/restricted"],
+                methods : ["GET", "POST"]
+            },
+            {
+                name : "logout user",
+                routes : ["/logout"],
+                methods : ["POST"]
+            }
+        ]
+    }
 
-	return userPolicy
+    return userPolicy
 };
 
 
