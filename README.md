@@ -1,4 +1,4 @@
-# mAuth: Macaroons-based authentication middleware for Express
+# mAuth: Macaroon-based authentication middleware for Express
 
 ## What is mAuth?
 
