@@ -105,6 +105,6 @@ function calculateMacaroonSecret(macaroonUserSecret){
 
 
 module.exports = {
-    generateMacaroons : generateMacaroons,
+    mintMacaroons : mintMacaroons,
     calculateMacaroonSecret : calculateMacaroonSecret
 };
