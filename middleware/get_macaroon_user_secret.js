@@ -1,10 +1,11 @@
+var MacaroonAuthUtils       = require("../utils/macaroon_auth.js");
+
 module.exports = function(options) {
     return function getMacaroonUserSecret(req, res, next) {
         if(typeof options.collection !== "undefined" && options.collection !== ""){
             var userId = "";
             if(req.method == "GET" || req.method == "DELETE"){
                 userId = req.query.userId;
-
             }
             else{
                 userId = req.body.userId;
@@ -16,7 +17,8 @@ module.exports = function(options) {
                     .then(function(user){
                         if(user !== null){
                             console.log("Setting macaroonUserSecret for user: " + user.userId);
-                            req.macaroonUserSecret = user.macaroonSecret;
+                            var macaroonSecret = MacaroonAuthUtils.calculateMacaroonSecret(user.macaroonSecret);
+                            req.macaroonSecret = macaroonSecret;
                         }
                         else{
                             console.log("Setting macaroonUserSecret to null for user");

@@ -1,5 +1,8 @@
-var MacaroonsBuilder    = require("macaroons.js").MacaroonsBuilder;
-var MacaroonsVerifier   = require("macaroons.js").MacaroonsVerifier;
+var MacaroonsBuilder        = require("macaroons.js").MacaroonsBuilder;
+var MacaroonsVerifier       = require("macaroons.js").MacaroonsVerifier;
+
+const crypto                = require("crypto");
+var macaroonServerSecret    = process.env.MACAROON_SERVER_SECRET;
 
 var _ = require('lodash');
 
@@ -91,7 +94,17 @@ function addTimeExpirationToMacaroon(macaroon, minutesFromNow){
         .getMacaroon();
 };  
 
+function calculateMacaroonSecret(macaroonUserSecret){
+    const hash = crypto.createHash('sha256');
+    hash.update(macaroonServerSecret + macaroonUserSecret);
+    var macaroonSecretHash = hash.digest("hex");
+    var macaroonSecret = Buffer.from(macaroonSecretHash, "hex"); 
+
+    return macaroonSecret;
+};
+
 
 module.exports = {
-    generateMacaroons : generateMacaroons
+    generateMacaroons : generateMacaroons,
+    calculateMacaroonSecret : calculateMacaroonSecret
 };

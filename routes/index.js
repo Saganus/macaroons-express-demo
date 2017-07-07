@@ -16,7 +16,6 @@ var MacaroonAuthUtils   = require("../utils/macaroon_auth.js");
 var macaroonsAuth       = require("../middleware/verify_macaroons");
 var getMacaroonSecret   = require("../middleware/get_macaroon_user_secret");
 
-var macaroonServerSecret    = process.env.MACAROON_SERVER_SECRET;
 var serverId                = process.env.SERVER_ID;
 var location                = "http://www.endofgreatness.net";
 //var macaroonSecret            = "3ec8441288c7220bbc5f9b8d144897b28615c4557e0ce5b179408bdd8c7c5779";
@@ -128,12 +127,8 @@ function getAuthMacaroons(userId, pass, db){
                 if(user !== null){
                     var isAuthenticated = scrypt.verifyKdfSync(Buffer.from(user.pass, "hex"), pass);
                     if(isAuthenticated){
-                        var userPolicy = getUserPolicy(user.userId);
-
-                        const hash          = crypto.createHash('sha256');
-                        hash.update(macaroonServerSecret + user.macaroonSecret);
-                        var macaroonSecret  = Buffer.from(hash.digest("hex"), "hex");
-
+                        var userPolicy      = getUserPolicy(user.userId);
+                        var macaroonSecret  = MacaroonAuthUtils.calculateMacaroonSecret(user.macaroonSecret);
                         authMacaroons       = MacaroonAuthUtils.generateMacaroons(userPolicy, location, macaroonSecret, user.identifier);
                         resolve(authMacaroons);
                     }

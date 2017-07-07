@@ -2,9 +2,7 @@
 var MacaroonsBuilder        = require("macaroons.js").MacaroonsBuilder;
 var MacaroonsVerifier       = require("macaroons.js").MacaroonsVerifier;
 var TimestampCaveatVerifier = require('macaroons.js').verifier.TimestampCaveatVerifier;
-const crypto                = require("crypto");
 
-var macaroonServerSecret    = process.env.MACAROON_SERVER_SECRET;
 var location                = "http://www.endofgreatness.net";
 var routesCaveatRegex       = /routes=(.*)/;
 
@@ -16,10 +14,10 @@ module.exports = function(options) {
         var serverId            = options.serverId;
         var publicScope         = options.publicScope;
         var serializedMacaroon  = req.cookies[serverId + "/" + req.method];
-        var macaroonUserSecret  = req.macaroonUserSecret;
+        var macaroonSecret      = req.macaroonSecret;
         
-        if(macaroonUserSecret !== null){
-            validateRequest(publicScope, serverId, serializedMacaroon, macaroonUserSecret, req.method, req.path)
+        if(macaroonSecret !== null){
+            validateRequest(publicScope, serverId, serializedMacaroon, macaroonSecret, req.method, req.path)
                 .then(function(isValid){
                     if(isValid){
                         next();
@@ -47,7 +45,7 @@ module.exports = function(options) {
     };
 };
 
-function validateRequest(publicScope, serverId, serializedMacaroon, macaroonUserSecret, method, path){
+function validateRequest(publicScope, serverId, serializedMacaroon, macaroonSecret, method, path){
     return new Promise((resolve, reject) => {
         if(typeof publicScope !== "undefined" && typeof publicScope[method] !== "undefined" && publicScope[method].indexOf(path) > -1){
             return resolve(true);
@@ -79,8 +77,6 @@ function validateRequest(publicScope, serverId, serializedMacaroon, macaroonUser
                 }
             });
 
-            var macaroonSecret = getMacaroonSecret(macaroonUserSecret, macaroonServerSecret);
-
             if(verifier.isValid(macaroonSecret)){
                 return resolve(true);
             }
@@ -96,15 +92,6 @@ function validateRequest(publicScope, serverId, serializedMacaroon, macaroonUser
         }
     });  
 };
-
-function getMacaroonSecret(macaroonUserSecret, macaroonServerSecret){
-    const hash = crypto.createHash('sha256');
-    hash.update(macaroonServerSecret + macaroonUserSecret);
-    var macaroonSecretHash = hash.digest("hex");
-    var macaroonSecret = Buffer.from(macaroonSecretHash, "hex"); 
-
-    return macaroonSecret;
-}
 
 /*
 function isValidGetRequest(serverId, getMacaroon, path){
