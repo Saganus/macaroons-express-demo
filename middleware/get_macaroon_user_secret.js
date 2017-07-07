@@ -1,4 +1,4 @@
-var MacaroonAuthUtils       = require("../utils/macaroon_auth.js");
+var mAuthMint   = require("mauth").mAuthMint;
 
 module.exports = function(options) {
     return function getMacaroonUserSecret(req, res, next) {
@@ -17,7 +17,7 @@ module.exports = function(options) {
                     .then(function(user){
                         if(user !== null){
                             console.log("Setting macaroonUserSecret for user: " + user.userId);
-                            var macaroonSecret = MacaroonAuthUtils.calculateMacaroonSecret(user.macaroonSecret);
+                            var macaroonSecret = mAuthMint.calculateMacaroonSecret(user.macaroonSecret);
                             req.macaroonSecret = macaroonSecret;
                         }
                         else{
