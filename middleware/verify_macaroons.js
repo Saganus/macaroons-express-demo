@@ -15,8 +15,8 @@ module.exports = function(options) {
         var publicScope         = options.publicScope;
         var serializedMacaroon  = req.cookies[serverId + "/" + req.method];
         var macaroonSecret      = req.macaroonSecret;
-        
-        if(macaroonSecret !== null){
+        console.log(macaroonSecret);
+        if(typeof macaroonSecret !== "undefined" && macaroonSecret !== null){
             validateRequest(publicScope, serverId, serializedMacaroon, macaroonSecret, req.method, req.path)
                 .then(function(isValid){
                     if(isValid){

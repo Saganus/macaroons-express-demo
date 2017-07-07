@@ -33,24 +33,20 @@ var publicScope = {
 router.use(getMacaroonSecret({collection: "ACEs"}));
 router.use(macaroonsAuth({serverId : serverId, publicScope : publicScope}));
 
-router.get("/", function(req, res, next) {
-    res.render("index", { title: "Express" });
-});
-
-router.get("/login", function(req, res, next){
+router.get("/", function(req, res, next){
     res.render("login_form", {});
 });
 
 router.post("/register", function(req, res, next){
 
-    var user = req.body.user;
+    var userId = req.body.userId;
     var pass = req.body.pass;
 
-    if (typeof user !== 'undefined' && user !== '' 
+    if (typeof userId !== 'undefined' && userId !== '' 
         && typeof pass !== 'undefined' && pass !== '' ){
-        registerNewUser(user, pass, req.db)
+        registerNewUser(userId, pass, req.db)
             .then(function(){
-                res.send("User " + user + " successfully registered");
+                res.send("User " + userId + " successfully registered");
             }).catch(function(error){
                 console.log(error);
                 res.sendStatus("401");
@@ -64,12 +60,12 @@ router.post("/register", function(req, res, next){
 
 router.post("/login", function(req, res, next){
 
-    var user = req.body.user;
+    var userId = req.body.userId;
     var pass = req.body.pass;
 
-    if (typeof user !== "undefined" && user !== ""
+    if (typeof userId !== "undefined" && userId !== ""
         && typeof pass !== "undefined" && pass !== "" ){
-        getAuthMacaroons(user, pass, req.db)
+        getAuthMacaroons(userId, pass, req.db)
             .then(function(authMacaroons){
 
 
@@ -78,7 +74,7 @@ router.post("/login", function(req, res, next){
                 res.cookie(serverId+"/PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
                 res.cookie(serverId+"/DELETE", authMacaroons["DELETE"], { maxAge: defaultCookieAge, httpOnly: true });
 
-                res.send("Successfully logged in");
+                res.redirect('/restricted?userId='+userId);
             }).catch(function (error) {
                 console.log("post(/login): getAuthMacaroons promise rejected:");
                 console.log(error);
