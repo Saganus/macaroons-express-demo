@@ -87,7 +87,7 @@ To use the system you need a MongoDB instance. Ideally I will later add support 
    
    * Register a new user with whatever name and password you like
    
-   * Navigate back to the root/login page and login. If the password is correct 4 Macaroons will be set as cookies and you will be redirected to http://localhost:3000/restricted?userId=<your user>
+   * Navigate back to the root/login page and login. If the password is correct 4 Macaroons will be set as cookies and you will be redirected to http://localhost:3000/restricted?userId=<your_user>
    
    * If you try to access the restricted page with any other userId you will be prevented from doing so
    
