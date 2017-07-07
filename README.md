@@ -65,11 +65,61 @@ On the other hand it's possible (but not required) to [provide a public scope to
 
 ## Advantages
 
-The idea is to provide a very simple to use middleware with per-instance and per-verb granularity in the access rules, while at the same time providing enhanced protection compared to a cookie-based approach. Since the access Macaroons are cryptographycally signed and include the context in which they are valid, it's much harder to do unauthorized actions in case of Macaroon theft. 
+### Simple to use
+   
+The idea is to provide a very simple to use middleware with per-instance and per-verb granularity in the access rules, while at the same time providing enhanced protection compared to a cookie-based approach. 
+
+The verifier middleware can be [used by adding only one line](https://github.com/Saganus/macaroons-express-demo/blob/master/routes/index.js#L34). It does not require any DB or network access and it's very fast to execute thanks to the way Macaroons are designed. 
+
+This allows you to easily and quickly protect several services backed up by a single Macaroon mint service. Whenever a new service is brought online the added verifier will immediately start enforcing whatever user policy you are using to mint the Macaroons.
+
+### Secure
+
+Since the access Macaroons are cryptographycally signed and include the context in which they are valid, it's much harder to do unauthorized actions in case of Macaroon theft. 
 
 In contrast, in a traditional cookie-based system it's an all-or-nothing approach. I.e. an auth token stored in a cookie either grants complete access in case it's stolen, and only by revoking the cookie can access be prevented.
 
 With the *mAuth* system, if for example the most commonly used Macaroon is the GET Macaroon and it happens to be stolen by a MITM, the attacker won't be able to do anything else other than GET requests while the Macaroon is valid, and only to those restricted routes specified in the user policy.
+
+### Fine granularity (WIP)
+
+On one hand we generate one Macaroon for each HTTP method, so you can decide exactly which methods is a user authorized to work with.
+
+On the other hand, authorized routes will support wildcards so you can determine which resources can each user request, without the need for long whitelists.
+
+Also, due to the way routes are defined, you can "group them up" with scopes, so that commonly used scopes can be defined once and reused for many users, giving you the chance to completely customize a user's access policy.
+
+For example:
+
+    scopes : 
+        [
+            {
+                name : "restricted",
+                routes : ["/restricted"],
+                methods : ["GET", "POST"]
+            },
+            {
+                name : "user profile",
+                routes : ["/users/:userId/**"],
+                methods : ["GET", "POST", "PUT"]
+            },
+            {
+                name : "user projects",
+                routes : ["/projects/:userId_*/*"],
+                methods : ["GET", "POST"]
+            },
+            {
+                name : "logout user",
+                routes : ["/logout/:userId"],
+                methods : ["POST"]
+            } 
+        ]
+        
+With this policy a user will have authorized access with `GET` and `POST` to `/restricted` as well as to the profile page, which as you can see is defined with wildcards of two different types. One of them is a variable (:userId) which will be replaced with the corresponding value at mint time, and the second `/**` one indicates that the access is granted recursively, i.e. the user will have access to any route that starts with `/users/:userId` so that if more features are added under that prefix, the user will still have access to them.
+
+In the next case, for the scope "user projects", the user is granted acces to anything that starts with `/projects/:userId` but only up to the first level. e.g. `/projects/<userId_projectId>/getDetails` but not `/projects/<userId_projectId>/files/<fileId>`, unlike in the previous case.
+
+Finally, the user is only authorized to do a POST to `/logout/:userId` (or maybe this can be changed to `/logout` and enforce the correct userId to be logged out in the actual logout function)
 
 ## How to use the mAuth middleware?
 
