@@ -16,81 +16,95 @@ module.exports = function(options) {
         var serverId            = options.serverId;
         var publicScope         = options.publicScope;
         var serializedMacaroon  = req.cookies[serverId + "/" + req.method];
-
-        validateRequest(publicScope, serverId, serializedMacaroon, req.method, req.path, req.db)
-            .then(function(isValid){
-                if(isValid){
-                    next();
-                }
-                else{
-                    res.sendStatus("401");
-                }
-            }).catch(function (error) {
-                console.log("Promise rejected:");
-                console.log(error);
-            });
-    };
-};
-
-function validateRequest(publicScope, serverId, serializedMacaroon, method, path, db){
-    return new Promise((resolve, reject) => {
-        if(typeof publicScope !== "undefined" && typeof publicScope[method] !== "undefined" && publicScope[method].indexOf(path) > -1){
-            return resolve(true);
-        }
-        else if(typeof serializedMacaroon !== "undefined"){
-            macaroon = MacaroonsBuilder.deserialize(serializedMacaroon);
-
-            var collection = db.collection('ACEs');
-            collection.findOne({identifier : macaroon.identifier})
-                .then(function(user){
-                    var verifier = new MacaroonsVerifier(macaroon);
-
-                    verifier.satisfyExact("server-id="+serverId);
-                    verifier.satisfyExact("method="+method);
-                    verifier.satisfyExact("route="+path);
-
-                    verifier.satisfyGeneral(TimestampCaveatVerifier);
-                    verifier.satisfyGeneral(function RouteCaveatVerifier(caveat) {
-                        var match = routesCaveatRegex.exec(caveat);
-                        if (match !== null) {
-                            var parsedRoutes = match[1].split(",");
-                            
-                            if(parsedRoutes.indexOf(path) > -1){
-                                return true;
-                            }
-                            else{
-                                return false;
-                            }
-                        }
-                        else{
-                            return false;
-                        }
-                    });
-
-                    const hash = crypto.createHash('sha256');
-                    hash.update(macaroonServerSecret + user.macaroonSecret);
-                    var macaroonSecretHash = hash.digest("hex");
-                    var macaroonSecret = Buffer.from(macaroonSecretHash, "hex");
-
-                    if(verifier.isValid(macaroonSecret)){
-                        return resolve(true);
+        var macaroonUserSecret  = req.macaroonUserSecret;
+        
+        if(macaroonUserSecret !== null){
+            validateRequest(publicScope, serverId, serializedMacaroon, macaroonUserSecret, req.method, req.path)
+                .then(function(isValid){
+                    if(isValid){
+                        next();
                     }
                     else{
-                        console.log("Provided Macaroon is invalid");
-                        console.log(macaroon.inspect());
-                        return resolve(false);
+                        res.sendStatus("401");
                     }
                 }).catch(function (error) {
                     console.log("Promise rejected:");
                     console.log(error);
+                    res.sendStatus("401");
                 });
+        }else{
+            //Allow only access to public scope
+            if(typeof publicScope !== "undefined" && typeof publicScope[req.method] !== "undefined" && publicScope[req.method].indexOf(req.path) > -1){
+                console.log("No macaroon secret found but allowing access to public scope");
+                next();
+            }
+            else{
+                console.log("No macaroon secret found. Denying access to non-public scope");
+                res.sendStatus("401");
+            }
+        }
+
+    };
+};
+
+function validateRequest(publicScope, serverId, serializedMacaroon, macaroonUserSecret, method, path){
+    return new Promise((resolve, reject) => {
+        if(typeof publicScope !== "undefined" && typeof publicScope[method] !== "undefined" && publicScope[method].indexOf(path) > -1){
+            return resolve(true);
+        }
+        else if(typeof serializedMacaroon !== "undefined" && serializedMacaroon !== ""){
+            macaroon = MacaroonsBuilder.deserialize(serializedMacaroon);
+
+            var verifier = new MacaroonsVerifier(macaroon);
+
+            verifier.satisfyExact("server-id="+serverId);
+            verifier.satisfyExact("method="+method);
+            verifier.satisfyExact("route="+path);
+
+            verifier.satisfyGeneral(TimestampCaveatVerifier);
+            verifier.satisfyGeneral(function RouteCaveatVerifier(caveat) {
+                var match = routesCaveatRegex.exec(caveat);
+                if (match !== null) {
+                    var parsedRoutes = match[1].split(",");
+                    
+                    if(parsedRoutes.indexOf(path) > -1){
+                        return true;
+                    }
+                    else{
+                        return false;
+                    }
+                }
+                else{
+                    return false;
+                }
+            });
+
+            var macaroonSecret = getMacaroonSecret(macaroonUserSecret, macaroonServerSecret);
+
+            if(verifier.isValid(macaroonSecret)){
+                return resolve(true);
+            }
+            else{
+                console.log("Provided Macaroon is invalid");
+                console.log(macaroon.inspect());
+                return resolve(false);
+            }
         }
         else{
             var error = new Error("No Macaroon provided for this request type");
-            return reject(error);
+            return resolve(false);
         }
     });  
 };
+
+function getMacaroonSecret(macaroonUserSecret, macaroonServerSecret){
+    const hash = crypto.createHash('sha256');
+    hash.update(macaroonServerSecret + macaroonUserSecret);
+    var macaroonSecretHash = hash.digest("hex");
+    var macaroonSecret = Buffer.from(macaroonSecretHash, "hex"); 
+
+    return macaroonSecret;
+}
 
 /*
 function isValidGetRequest(serverId, getMacaroon, path){

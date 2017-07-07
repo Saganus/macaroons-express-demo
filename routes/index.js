@@ -14,6 +14,7 @@ var MacaroonsVerifier 	= require("macaroons.js").MacaroonsVerifier;
 
 var MacaroonAuthUtils	= require("../utils/macaroon_auth.js");
 var macaroonsAuth 		= require("../middleware/verify_macaroons");
+var getMacaroonSecret	= require("../middleware/get_macaroon_user_secret");
 
 var macaroonServerSecret	= process.env.MACAROON_SERVER_SECRET;
 var serverId 				= process.env.SERVER_ID;
@@ -30,6 +31,7 @@ var publicScope = {
 	POST : ["/login", "/register", "/resetPassword"]
 }
 
+router.use(getMacaroonSecret({collection: "ACEs"}));
 router.use(macaroonsAuth({serverId : serverId, publicScope : publicScope}));
 
 router.get("/", function(req, res, next) {
@@ -71,6 +73,7 @@ router.post("/login", function(req, res, next){
 		getAuthMacaroons(user, pass, req.db)
 			.then(function(authMacaroons){
 
+
 				res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
 				res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
 				res.cookie(serverId+"/PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
@@ -88,8 +91,8 @@ router.post("/login", function(req, res, next){
 	}
 });
 
-router.post("/logout/:userId", function(req, res, next){
-	var userId = req.params.userId;
+router.post("/logout", function(req, res, next){
+	var userId = req.body.userId;
 	console.log("logging out user: " + userId);
 	if (typeof userId !== "undefined" && userId !== ""){
 		var collection = req.db.collection('ACEs');
@@ -129,7 +132,7 @@ function getAuthMacaroons(userId, pass, db){
 
 						const hash 			= crypto.createHash('sha256');
 						hash.update(macaroonServerSecret + user.macaroonSecret);
-						var macaroonSecret 		= Buffer.from(hash.digest("hex"), "hex");
+						var macaroonSecret 	= Buffer.from(hash.digest("hex"), "hex");
 
 						authMacaroons 		= MacaroonAuthUtils.generateMacaroons(userPolicy, location, macaroonSecret, user.identifier);
 						resolve(authMacaroons);
@@ -196,7 +199,7 @@ function getUserPolicy(userId){
 			},
 			{
 				name : "logout user",
-				routes : ["/logout/"+userId],
+				routes : ["/logout"],
 				methods : ["POST"]
 			}
 		]
