@@ -6,18 +6,19 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "body-parser": "~1.17.1",
+    "body-parser": "^1.17.2",
     "cookie-parser": "^1.4.3",
-    "debug": "~2.6.0",
+    "debug": "^2.6.8",
     "ejs": "~2.5.5",
-    "express": "~4.15.2",
+    "express": "^4.15.3",
     "express-mongo-db": "^2.0.3",
     "lodash": "^4.17.4",
     "macaroons.js": "^0.3.8",
+    "mauth": "^0.1.2",
     "mongodb": "^2.2.29",
-    "morgan": "~1.8.2",
+    "morgan": "^1.8.2",
     "scrypt": "^6.0.3",
-    "serve-favicon": "~2.4.3",
+    "serve-favicon": "^2.4.3",
     "uuid": "^3.1.0"
   }
 }

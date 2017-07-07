@@ -12,8 +12,10 @@ var scryptParameters    = scrypt.paramsSync(0.1);
 var MacaroonsBuilder    = require("macaroons.js").MacaroonsBuilder;
 var MacaroonsVerifier   = require("macaroons.js").MacaroonsVerifier;
 
-var MacaroonAuthUtils   = require("../utils/macaroon_auth.js");
-var macaroonsAuth       = require("../middleware/verify_macaroons");
+//var MacaroonAuthUtils   = require("../utils/macaroon_auth.js");
+//var macaroonsAuth       = require("../middleware/verify_macaroons");
+var mAuthMint           = require("mauth").mAuthMint;
+var mAuthVerifier       = require("mauth").mAuthVerifier;
 var getMacaroonSecret   = require("../middleware/get_macaroon_user_secret");
 
 var serverId                = process.env.SERVER_ID;
@@ -31,7 +33,7 @@ var publicScope = {
 };
 
 router.use(getMacaroonSecret({collection: "ACEs"}));
-router.use(macaroonsAuth({serverId : serverId, publicScope : publicScope}));
+router.use(mAuthVerifier({serverId : serverId, publicScope : publicScope}));
 
 router.get("/", function(req, res, next){
     res.render("login_form", {});
@@ -123,8 +125,8 @@ function getAuthMacaroons(userId, pass, db){
                     var isAuthenticated = scrypt.verifyKdfSync(Buffer.from(user.pass, "hex"), pass);
                     if(isAuthenticated){
                         var userPolicy      = getUserPolicy(user.userId);
-                        var macaroonSecret  = MacaroonAuthUtils.calculateMacaroonSecret(user.macaroonSecret);
-                        authMacaroons       = MacaroonAuthUtils.mintMacaroons(userPolicy, location, macaroonSecret, user.identifier);
+                        var macaroonSecret  = mAuthMint.calculateMacaroonSecret(user.macaroonSecret);
+                        authMacaroons       = mAuthMint.mintMacaroons(userPolicy, location, macaroonSecret, user.identifier);
                         resolve(authMacaroons);
                     }
                     else{
