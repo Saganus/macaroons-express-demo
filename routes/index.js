@@ -68,7 +68,6 @@ router.post("/login", function(req, res, next){
         getAuthMacaroons(userId, pass, req.db)
             .then(function(authMacaroons){
 
-
                 res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
                 res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
                 res.cookie(serverId+"/PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
