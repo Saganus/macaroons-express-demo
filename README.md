@@ -13,7 +13,11 @@ The interesting parts are in the two core modules: the mint and the verifier (pl
    * After a user is registered and logs into the system, the *mAuth* mint module [creates four Macaroons](https://github.com/Saganus/macaroons-express-demo/blob/master/routes/index.js#L125-L127), one for each HTTP method (GET, POST, PUT and DELETE) based on the provided user policy
    * The generated Macaroons are [stored as four different cookies](https://github.com/Saganus/macaroons-express-demo/blob/master/routes/index.js#L68-L74) in their serialized forms (this is the suggested use, however it's not a requirement. The serialized Macaroons can be stored in pretty much any way)
 
-On the other hand, to protect a restricted resource one needs only to [use the verifier middleware](https://github.com/Saganus/macaroons-express-demo/blob/master/routes/index.js#L33-L34) which after proper configuration will allow public scopes to be accessed without presenting a Macaroon or will [verify that the presented Macaroon authorizes the user](https://github.com/Saganus/macaroons-express-demo/blob/master/middleware/verify_macaroons.js#L50-L93) to access the restricted resource
+On the other hand, to protect a restricted resource one needs only to 
+   * [use the verifier middleware](https://github.com/Saganus/macaroons-express-demo/blob/master/routes/index.js#L33-L34) which after proper configuration will allow public scopes to be accessed without presenting a Macaroon 
+   * or will [verify that the presented Macaroon authorizes the user](https://github.com/Saganus/macaroons-express-demo/blob/master/middleware/verify_macaroons.js#L50-L93) to access the restricted resource
+
+
    
    
 
