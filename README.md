@@ -123,7 +123,7 @@ Finally, the user is only authorized to do a POST to `/logout/:userId` (or maybe
 
 ## How to use the mAuth middleware?
 
-To use the system you need a MongoDB instance. Ideally I will later add support for other DBs but for now this is the easiest one to work with for a simple demo. 
+To use the demo you need a MongoDB instance. Ideally I will later add support for other DBs but for now this is the easiest one to work with for a simple demo. 
 
    * Clone the repo: `git clone https://github.com/Saganus/macaroons-express-demo.git`
    
