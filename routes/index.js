@@ -8,15 +8,7 @@ const uuidv4    = require('uuid/v4');
 
 var scrypt              = require("scrypt");
 var scryptParameters    = scrypt.paramsSync(0.1);
-
-var MacaroonsBuilder    = require("macaroons.js").MacaroonsBuilder;
-var MacaroonsVerifier   = require("macaroons.js").MacaroonsVerifier;
-
-//var MacaroonAuthUtils   = require("../utils/macaroon_auth.js");
-//var macaroonsAuth       = require("../middleware/verify_macaroons");
 var mAuthMint           = require("mauth").mAuthMint;
-var mAuthVerifier       = require("mauth").mAuthVerifier;
-var getMacaroonSecret   = require("../middleware/get_macaroon_user_secret");
 
 var serverId                = process.env.SERVER_ID;
 var location                = "http://www.endofgreatness.net";
@@ -26,14 +18,6 @@ var location                = "http://www.endofgreatness.net";
 //var identifier            = "random32";
 
 var defaultCookieAge    = 1 * 60 * 60 * 1000;
-
-var publicScope = {
-    GET : ["/", "/login"],
-    POST : ["/login", "/register", "/resetPassword"]
-};
-
-router.use(getMacaroonSecret({collection: "ACEs"}));
-router.use(mAuthVerifier({serverId : serverId, publicScope : publicScope}));
 
 router.get("/", function(req, res, next){
     res.render("login_form", {});
@@ -96,7 +80,10 @@ router.post("/logout", function(req, res, next){
         collection.updateOne({userId: userId}, {$set: {macaroonSecret: macaroonSecret}})
             .then(function(updateResult){
                 if(updateResult.result["ok"] == 1){
-                    //console.log(result);
+                    //res.clearCookie(serverId+"/GET");
+                    //res.clearCookie(serverId+"/POST");
+                    //res.clearCookie(serverId+"/PUT");
+                    //res.clearCookie(serverId+"/DELETE");
                     res.send("Logged out successfully");
                 }
                 else{

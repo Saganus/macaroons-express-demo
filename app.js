@@ -8,7 +8,19 @@ var expressMongoDb  = require('express-mongo-db');
 
 var index       = require("./routes/index");
 var users       = require("./routes/users");
-var restricted  = require("./routes/restricted")
+var restricted  = require("./routes/restricted");
+
+
+
+var mAuthVerifier       = require("mauth").mAuthVerifier;
+var getMacaroonSecret   = require("./middleware/get_macaroon_user_secret");
+var serverId                = process.env.SERVER_ID;
+var location                = "http://www.endofgreatness.net";
+
+var publicScope = {
+    GET : ["/", "/login"],
+    POST : ["/login", "/register", "/resetPassword"]
+};
 
 var app = express();
 
@@ -23,6 +35,10 @@ app.use(expressMongoDb('mongodb://localhost:27017/myproject'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+app.use(getMacaroonSecret({collection: "ACEs"}));
+app.use(mAuthVerifier({serverId : serverId, publicScope : publicScope}));
+
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", index);

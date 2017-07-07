@@ -14,7 +14,7 @@
     "express-mongo-db": "^2.0.3",
     "lodash": "^4.17.4",
     "macaroons.js": "^0.3.8",
-    "mauth": "^0.1.2",
+    "mauth": "^0.1.4",
     "mongodb": "^2.2.29",
     "morgan": "^1.8.2",
     "scrypt": "^6.0.3",

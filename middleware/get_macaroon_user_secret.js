@@ -5,12 +5,11 @@ module.exports = function(options) {
         if(typeof options.collection !== "undefined" && options.collection !== ""){
             var userId = "";
             if(req.method == "GET" || req.method == "DELETE"){
-                userId = req.query.userId;
+                userId = req.params.userId;
             }
             else{
                 userId = req.body.userId;
             }
-
             if(typeof userId !== "undefined" && userId !== ""){
                 var collection = req.db.collection(options.collection);
                 collection.findOne({userId: userId})
