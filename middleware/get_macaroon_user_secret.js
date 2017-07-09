@@ -5,7 +5,7 @@ module.exports = function(options) {
         if(typeof options.collection !== "undefined" && options.collection !== ""){
             var userId = "";
             if(req.method == "GET" || req.method == "DELETE"){
-                userId = req.params.userId;
+                userId = req.query.userId;
             }
             else{
                 userId = req.body.userId;
