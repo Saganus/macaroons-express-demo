@@ -10,12 +10,12 @@ var index       = require("./routes/index");
 var users       = require("./routes/users");
 var restricted  = require("./routes/restricted");
 
-
+var _ = require('lodash');
 
 var mAuthVerifier       = require("mauth").mAuthVerifier;
-var getMacaroonSecret   = require("./middleware/get_macaroon_user_secret");
-var serverId                = process.env.SERVER_ID;
-var location                = "http://www.endofgreatness.net";
+var getVerifierParams   = require("./middleware/get_verifier_params");
+var serverId            = process.env.SERVER_ID;
+var location            = "http://www.endofgreatness.net";
 
 var publicScope = {
     GET : ["/", "/login"],
@@ -23,6 +23,50 @@ var publicScope = {
 };
 
 var app = express();
+
+var routesCaveatVerifier = function(params){
+    return function RoutesCaveatVerifier(caveat) {
+        var routesCaveatRegex       = /routes=(.*)/;
+        var match = routesCaveatRegex.exec(caveat);
+        console.log(caveat);
+        if (match !== null) {
+            var parsedRoutes = match[1].split(",");
+
+            var exactRoutes = parsedRoutes.filter(function(route) { 
+                return route.indexOf("*") == -1;
+            });
+
+            var prefixRoutes = parsedRoutes.filter(function(route) { 
+                return route.indexOf("*") > -1;
+            });
+
+            if(exactRoutes.indexOf(params.path) > -1){
+                console.log("true exact");
+                return true;
+            }
+            else{
+                prefixRoutes.forEach(function(route){
+                    if(params.path.startsWith(route)){
+                        console.log("true prefix")
+                        return true;
+                    }
+                });
+
+                return false;
+            }
+        }
+        else{
+            console.log("false2");
+            return false;
+        }
+    };
+};
+
+var satisfierFunctions = {
+    "routes" : routesCaveatVerifier
+}
+
+
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -37,8 +81,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use(getMacaroonSecret({collection: "ACEs"}));
-app.use(mAuthVerifier({serverId : serverId, publicScope : publicScope}));
+app.use(getVerifierParams({collection: "ACEs"}));
+app.use(mAuthVerifier({publicScope : publicScope, satisfierFunctions: satisfierFunctions}));
 
 app.use("/", index);
 app.use("/users", users);

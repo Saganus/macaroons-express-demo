@@ -48,17 +48,25 @@ router.post("/login", function(req, res, next){
 
     var userId = req.body.userId;
     var pass = req.body.pass;
-
+    console.log("post /login router");
+    console.log(userId);
+    console.log(pass);
     if (typeof userId !== "undefined" && userId !== ""
         && typeof pass !== "undefined" && pass !== "" ){
         getAuthMacaroons(userId, pass, req.db)
             .then(function(authMacaroons){
 
-                res.cookie(serverId+"/GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
-                res.cookie(serverId+"/POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
-                res.cookie(serverId+"/PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
-                res.cookie(serverId+"/DELETE", authMacaroons["DELETE"], { maxAge: defaultCookieAge, httpOnly: true });
+                res.clearCookie("GET");
+                res.clearCookie("POST");
+                res.clearCookie("PUT");
+                res.clearCookie("DELETE");
 
+                res.cookie("GET", authMacaroons["GET"], { maxAge: defaultCookieAge, httpOnly: true });
+                res.cookie("POST", authMacaroons["POST"], { maxAge: defaultCookieAge, httpOnly: true });
+                res.cookie("PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
+                res.cookie("DELETE", authMacaroons["DELETE"], { maxAge: defaultCookieAge, httpOnly: true });
+
+                console.log("redirecting");
                 res.redirect('/restricted?userId='+userId);
             }).catch(function (error) {
                 console.log("post(/login): getAuthMacaroons promise rejected:");
@@ -111,9 +119,11 @@ function getAuthMacaroons(userId, pass, db){
                 if(user !== null){
                     var isAuthenticated = scrypt.verifyKdfSync(Buffer.from(user.pass, "hex"), pass);
                     if(isAuthenticated){
-                        var userPolicy      = getUserPolicy(user.userId);
+                        console.log("isAuthenticated");
+                        var mintPolicy      = getMintPolicy(user.userId);
                         var macaroonSecret  = mAuthMint.calculateMacaroonSecret(user.macaroonSecret);
-                        authMacaroons       = mAuthMint.mintMacaroons(userPolicy, location, macaroonSecret, user.identifier);
+                        authMacaroons       = mAuthMint.mintMacaroons(mintPolicy, location, macaroonSecret, user.identifier);
+
                         resolve(authMacaroons);
                     }
                     else{
@@ -163,6 +173,46 @@ function registerNewUser(userId, pass, db){
     
 };
 
+
+function getMintPolicy(userId){
+
+    var mintPolicy = {
+        policyName: "default",
+        baseCaveats: [
+            {
+                name : "serverId",
+                value: serverId
+            },
+            {
+                name : "expires",
+                value: 3
+            }
+        ],
+        perMethodCaveats: [
+            {
+                requestMethod: "GET",
+                caveats: [
+                    {
+                        name : "routes",
+                        value: "/restricted"
+
+                    }
+                    
+                ]
+            },
+            {
+                requestMethod: "POST",
+                caveats: [
+                    {
+                        name : "routes",
+                        value: "/restricted,/logout"
+                    }
+                ]
+            },
+        ]
+    };
+    return mintPolicy;
+};
 
 function getUserPolicy(userId){
     var userPolicy = {
