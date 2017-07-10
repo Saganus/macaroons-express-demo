@@ -18,30 +18,7 @@ module.exports = function(options) {
                             console.log("Setting macaroonUserSecret for user: " + user.userId);
                             var macaroonSecret = mAuthMint.calculateMacaroonSecret(user.macaroonSecret);
                             req.macaroonSecret = macaroonSecret;
-
-                            var verifierPolicy = {
-                                policyName: "default",
-                                satisfyExact: [
-                                    {
-                                        name: "serverId",
-                                        value: process.env.SERVER_ID
-                                    },
-                                    {
-                                        name: "requestMethod",
-                                        value: req.method
-                                    }
-                                ],
-                                satisfyGeneral: [
-                                    {
-                                        name: "time"
-                                    },
-                                    {
-                                        name: "routes",
-                                    }
-                                ]
-                            };
-
-                            req.verifierPolicy = verifierPolicy;
+                            req.verifierPolicy = user.verifierPolicy;
 
                             var serializedMacaroons = {
                                 "GET" : req.cookies["GET"],

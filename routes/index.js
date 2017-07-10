@@ -120,7 +120,8 @@ function getAuthMacaroons(userId, pass, db){
                     var isAuthenticated = scrypt.verifyKdfSync(Buffer.from(user.pass, "hex"), pass);
                     if(isAuthenticated){
                         console.log("isAuthenticated");
-                        var mintPolicy      = getMintPolicy(user.userId);
+
+                        var mintPolicy      = user.mintPolicy;
                         var macaroonSecret  = mAuthMint.calculateMacaroonSecret(user.macaroonSecret);
                         authMacaroons       = mAuthMint.mintMacaroons(mintPolicy, location, macaroonSecret, user.identifier);
 
@@ -161,8 +162,78 @@ function registerNewUser(userId, pass, db){
                 }
                 else{
                     var macaroonSecret = crypto.randomBytes(32).toString('hex');
-                    collection.insertOne({userId: userId, pass: pass, userPolicy: userPolicy, macaroonSecret : macaroonSecret, identifier : uuidv4()}); 
-                    resolve();
+                    var verifierPolicy = {
+                        policyName: "default",
+                        satisfyExact: [
+                            {
+                                name: "serverId",
+                                value: process.env.SERVER_ID
+                            },
+                            {
+                                name: "requestMethod",
+                                value: req.method
+                            }
+                        ],
+                        satisfyGeneral: [
+                            {
+                                name: "time"
+                            },
+                            {
+                                name: "routes",
+                            }
+                        ]
+                    };
+
+                    var mintPolicy = {
+                        policyName: "default",
+                        baseCaveats: [
+                            {
+                                name : "serverId",
+                                value: serverId
+                            },
+                            {
+                                name : "expires",
+                                value: 3
+                            }
+                        ],
+                        perMethodCaveats: [
+                            {
+                                requestMethod: "GET",
+                                caveats: [
+                                    {
+                                        name : "routes",
+                                        value: "/restricted"
+                                    }
+                                    
+                                ]
+                            },
+                            {
+                                requestMethod: "POST",
+                                caveats: [
+                                    {
+                                        name : "routes",
+                                        value: "/restricted,/logout"
+                                    }
+                                ]
+                            },
+                        ]
+                    };
+
+                    try{
+                        collection.insertOne({
+                            userId: userId, 
+                            pass: pass, 
+                            verifierPolicy: verifierPolicy,
+                            mintPolicy: mintPolicy,
+                            macaroonSecret : macaroonSecret, 
+                            identifier : uuidv4()}); 
+                        resolve();
+                    }cath(err){
+                        console.log(err);
+                        reject(err)
+                    };
+
+                    
                 }
             }).catch(function (error) {
                 console.log("Promise rejected:");
@@ -195,7 +266,6 @@ function getMintPolicy(userId){
                     {
                         name : "routes",
                         value: "/restricted"
-
                     }
                     
                 ]
