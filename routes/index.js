@@ -162,27 +162,6 @@ function registerNewUser(userId, pass, db){
                 }
                 else{
                     var macaroonSecret = crypto.randomBytes(32).toString('hex');
-                    var verifierPolicy = {
-                        policyName: "default",
-                        satisfyExact: [
-                            {
-                                name: "serverId",
-                                value: process.env.SERVER_ID
-                            },
-                            {
-                                name: "requestMethod",
-                                value: req.method
-                            }
-                        ],
-                        satisfyGeneral: [
-                            {
-                                name: "time"
-                            },
-                            {
-                                name: "routes",
-                            }
-                        ]
-                    };
 
                     var mintPolicy = {
                         policyName: "default",
@@ -223,17 +202,15 @@ function registerNewUser(userId, pass, db){
                         collection.insertOne({
                             userId: userId, 
                             pass: pass, 
-                            verifierPolicy: verifierPolicy,
                             mintPolicy: mintPolicy,
                             macaroonSecret : macaroonSecret, 
-                            identifier : uuidv4()}); 
+                            identifier : uuidv4()});
+
                         resolve();
-                    }cath(err){
+                    }catch(err){
                         console.log(err);
                         reject(err)
                     };
-
-                    
                 }
             }).catch(function (error) {
                 console.log("Promise rejected:");

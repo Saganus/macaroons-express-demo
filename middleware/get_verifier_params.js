@@ -28,6 +28,30 @@ module.exports = function(options) {
                             }
 
                             req.serializedMacaroons = serializedMacaroons;
+
+                            var verifierPolicy = {
+                                policyName: "default",
+                                satisfyExact: [
+                                    {
+                                        name: "serverId",
+                                        value: process.env.SERVER_ID
+                                    },
+                                    {
+                                        name: "requestMethod",
+                                        value: req.method
+                                    }
+                                ],
+                                satisfyGeneral: [
+                                    {
+                                        name: "time"
+                                    },
+                                    {
+                                        name: "routes",
+                                    }
+                                ]
+                            };
+
+                            req.verifierPolicy = verifierPolicy;
                         }
                         else{
                             console.log("Setting macaroonUserSecret to null for user");
