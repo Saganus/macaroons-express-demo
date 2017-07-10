@@ -41,7 +41,6 @@ var routesCaveatVerifier = function(params){
             });
 
             if(exactRoutes.indexOf(params.path) > -1){
-                console.log("true exact");
                 return true;
             }
             else{
@@ -51,12 +50,12 @@ var routesCaveatVerifier = function(params){
                         return true;
                     }
                 });
-
+                console.log("No match found in exact or prefix routes");
                 return false;
             }
         }
         else{
-            console.log("false2");
+            console.log("No match found");
             return false;
         }
     };
@@ -65,8 +64,6 @@ var routesCaveatVerifier = function(params){
 var satisfierFunctions = {
     "routes" : routesCaveatVerifier
 }
-
-
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
