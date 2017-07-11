@@ -24,45 +24,8 @@ var publicScope = {
 
 var app = express();
 
-var routesCaveatVerifier = function(params){
-    return function RoutesCaveatVerifier(caveat) {
-        var routesCaveatRegex       = /routes=(.*)/;
-        var match = routesCaveatRegex.exec(caveat);
-        console.log(caveat);
-        if (match !== null) {
-            var parsedRoutes = match[1].split(",");
-
-            var exactRoutes = parsedRoutes.filter(function(route) { 
-                return route.indexOf("*") == -1;
-            });
-
-            var prefixRoutes = parsedRoutes.filter(function(route) { 
-                return route.indexOf("*") > -1;
-            });
-
-            if(exactRoutes.indexOf(params.path) > -1){
-                return true;
-            }
-            else{
-                prefixRoutes.forEach(function(route){
-                    if(params.path.startsWith(route)){
-                        console.log("true prefix")
-                        return true;
-                    }
-                });
-                console.log("No match found in exact or prefix routes");
-                return false;
-            }
-        }
-        else{
-            console.log("No match found");
-            return false;
-        }
-    };
-};
-
 var satisfierFunctions = {
-    "routes" : routesCaveatVerifier
+    "routes" : mAuthVerifier.routesCaveatVerifier
 }
 
 // view engine setup
@@ -79,7 +42,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(getVerifierParams({collection: "ACEs"}));
-app.use(mAuthVerifier({publicScope : publicScope, satisfierFunctions: satisfierFunctions}));
+app.use(mAuthVerifier.verifyMacaroons({publicScope : publicScope, satisfierFunctions: satisfierFunctions}));
 
 app.use("/", index);
 app.use("/users", users);

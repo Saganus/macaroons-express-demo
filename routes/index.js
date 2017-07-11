@@ -48,9 +48,7 @@ router.post("/login", function(req, res, next){
 
     var userId = req.body.userId;
     var pass = req.body.pass;
-    console.log("post /login router");
-    console.log(userId);
-    console.log(pass);
+
     if (typeof userId !== "undefined" && userId !== ""
         && typeof pass !== "undefined" && pass !== "" ){
         getAuthMacaroons(userId, pass, req.db)
@@ -66,7 +64,6 @@ router.post("/login", function(req, res, next){
                 res.cookie("PUT", authMacaroons["PUT"], { maxAge: defaultCookieAge, httpOnly: true });
                 res.cookie("DELETE", authMacaroons["DELETE"], { maxAge: defaultCookieAge, httpOnly: true });
 
-                console.log("redirecting");
                 res.redirect('/restricted?userId='+userId);
             }).catch(function (error) {
                 console.log("post(/login): getAuthMacaroons promise rejected:");
@@ -119,8 +116,6 @@ function getAuthMacaroons(userId, pass, db){
                 if(user !== null){
                     var isAuthenticated = scrypt.verifyKdfSync(Buffer.from(user.pass, "hex"), pass);
                     if(isAuthenticated){
-                        console.log("isAuthenticated");
-
                         var mintPolicy      = user.mintPolicy;
                         var macaroonSecret  = mAuthMint.calculateMacaroonSecret(user.macaroonSecret);
                         authMacaroons       = mAuthMint.mintMacaroons(mintPolicy, location, macaroonSecret, user.identifier);
